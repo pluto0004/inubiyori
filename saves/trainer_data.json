@@ -1,18 +1,18 @@
 {
-  "trainer_level": 1,
-  "trainer_exp": 90,
+  "trainer_level": 3,
+  "trainer_exp": 80,
   "dogs_raised": {
-    "コーギー": 0,
-    "ミニチュアダックスフンド": 1,
-    "柴犬": 1
+    "コーギー": 2,
+    "ミニチュアダックスフンド": 3,
+    "柴犬": 4
   },
-  "total_deaths": 2,
+  "total_deaths": 9,
   "max_growth_stage": "老犬",
   "bonuses": {
-    "feed_bonus": 1.0,
-    "happiness_bonus": 1.0,
-    "discipline_bonus": 1.0,
-    "cleanliness_bonus": 1.0,
-    "energy_bonus": 1.0
+    "feed_bonus": 1.1,
+    "happiness_bonus": 1.1,
+    "discipline_bonus": 1.1,
+    "cleanliness_bonus": 1.1,
+    "energy_bonus": 1.1
   }
 }

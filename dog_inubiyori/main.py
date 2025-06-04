@@ -7,6 +7,7 @@ from game_state import GameState
 from dog import Dog
 from ui import UI
 from utils import Utils, SaveManager
+from music_manager import MusicManager
 
 class DogTamagotchi:
     def __init__(self):
@@ -14,6 +15,9 @@ class DogTamagotchi:
         self.width, self.height = 800, 600
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption("犬びより")
+        
+        # 音楽マネージャーの初期化
+        self.music_manager = MusicManager()
         
         # UI管理（ローディング画面用）
         self.ui = UI(self.screen, self.width, self.height)
@@ -45,6 +49,12 @@ class DogTamagotchi:
         
         # 更新間隔（秒）
         self.update_interval = 1.0  # 1秒ごとに更新
+        
+        # オープニング音楽を再生
+        try:
+            self.music_manager.play_music("opening")
+        except Exception as e:
+            print(f"音楽の再生に失敗しました: {e}")
     
     def show_loading_screen(self):
         """ローディング画面を表示"""
@@ -120,6 +130,9 @@ class DogTamagotchi:
             # ゲーム状態の同期
             self.state = self.game_state.state
             
+            # 音楽の更新
+            self.update_music()
+            
             # 定期的に更新
             current_time = time.time()
             if current_time - self.last_update_time >= self.update_interval:
@@ -129,6 +142,19 @@ class DogTamagotchi:
             self.render()
             pygame.display.flip()  # 毎フレーム画面を更新
             self.clock.tick(self.fps)
+    
+    def update_music(self):
+        """状態に応じて音楽を更新"""
+        if self.state == "select_dog":
+            # タイトル画面では opening 音楽
+            self.music_manager.play_music("opening")
+        elif self.state == "main_game":
+            if self.game_state.dog and not self.game_state.dog.is_alive:
+                # 犬が死亡している場合は funeral 音楽
+                self.music_manager.play_music("funeral")
+            else:
+                # 通常のゲーム画面では game 音楽
+                self.music_manager.play_music("game")
     
     def handle_dog_selection(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -144,22 +170,20 @@ class DogTamagotchi:
                 self.game_state.start_game(self.dog)
                 # ゲーム状態の同期を確実に行う
                 self.game_state.state = "main_game"
+                # 音楽を更新
+                self.music_manager.play_music("game")
                 return  # 他の処理を行わずに関数を抜ける
             
             # メニューボタンのチェック
             menu_item = self.ui.check_menu_selection(mouse_pos)
             if menu_item == "墓地を見る":
                 self.game_state.show_graveyard()
-                # 状態を更新してから即座に画面を描画
+                # 状態を更新
                 self.state = self.game_state.state
-                self.render()
-                pygame.display.flip()  # 画面を強制的に更新
             elif menu_item == "トレーナー情報":
                 self.game_state.show_trainer_info()
-                # 状態を更新してから即座に画面を描画
+                # 状態を更新
                 self.state = self.game_state.state
-                self.render()
-                pygame.display.flip()  # 画面を強制的に更新
     
     def handle_main_game(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -171,6 +195,14 @@ class DogTamagotchi:
                     self.game_state.restart_game()
                     # 状態を更新
                     self.state = self.game_state.state
+                    # 音楽を更新
+                    self.music_manager.play_music("opening")
+                elif action.startswith("demo_"):
+                    # デモアクションの場合
+                    self.game_state.perform_action(action)
+                    # 犬が死亡した場合は音楽を変更
+                    if action == "demo_kill":
+                        self.music_manager.play_music("funeral")
                 else:
                     self.game_state.perform_action(action)
             
@@ -194,6 +226,14 @@ class DogTamagotchi:
                 self.game_state.back_to_main()
                 # 状態を更新
                 self.state = self.game_state.state
+                # 音楽を更新
+                if self.state == "select_dog":
+                    self.music_manager.play_music("opening")
+                elif self.state == "main_game":
+                    if self.game_state.dog and not self.game_state.dog.is_alive:
+                        self.music_manager.play_music("funeral")
+                    else:
+                        self.music_manager.play_music("game")
     
     def handle_trainer_info(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -204,10 +244,23 @@ class DogTamagotchi:
                 self.game_state.back_to_main()
                 # 状態を更新
                 self.state = self.game_state.state
+                # 音楽を更新
+                if self.state == "select_dog":
+                    self.music_manager.play_music("opening")
+                elif self.state == "main_game":
+                    if self.game_state.dog and not self.game_state.dog.is_alive:
+                        self.music_manager.play_music("funeral")
+                    else:
+                        self.music_manager.play_music("game")
     
     def update(self):
         if self.state == "main_game":
             self.game_state.update()
+            
+            # 犬の状態が変わった場合に音楽を更新
+            if self.game_state.dog:
+                if not self.game_state.dog.is_alive:
+                    self.music_manager.play_music("funeral")
     
     def render(self):
         self.screen.fill((255, 255, 255))
@@ -220,13 +273,14 @@ class DogTamagotchi:
             self.ui.draw_graveyard(self.save_manager.graveyard)
         elif self.state == "trainer_info":
             self.ui.draw_trainer_info(self.save_manager.trainer_data)
-        
-        pygame.display.flip()
     
     def quit_game(self):
         # ゲームデータを保存
         if self.game_state.dog and self.game_state.dog.is_alive:
             self.game_state.save_current_game()
+        
+        # 音楽を停止
+        self.music_manager.stop_music()
         
         pygame.quit()
         sys.exit()

@@ -12,5 +12,54 @@
     "growth_stage": "老犬",
     "death_date": "2025-06-04 00:41:50",
     "lifespan": 0.3101096630096435
+  },
+  {
+    "name": "ミニチュアダックスフンド",
+    "dog_type": "ミニチュアダックスフンド",
+    "growth_stage": "老犬",
+    "death_date": "2025-06-04 00:54:34",
+    "lifespan": 0.31801011562347414
+  },
+  {
+    "name": "柴犬",
+    "dog_type": "柴犬",
+    "growth_stage": "老犬",
+    "death_date": "2025-06-04 00:55:00",
+    "lifespan": 0.12601874669392904
+  },
+  {
+    "name": "柴犬",
+    "dog_type": "柴犬",
+    "growth_stage": "子犬",
+    "death_date": "2025-06-04 11:10:46",
+    "lifespan": 0.11485131978988648
+  },
+  {
+    "name": "コーギー",
+    "dog_type": "コーギー",
+    "growth_stage": "成犬",
+    "death_date": "2025-06-04 13:37:22",
+    "lifespan": 0.24026916821797684
+  },
+  {
+    "name": "柴犬",
+    "dog_type": "柴犬",
+    "growth_stage": "老犬",
+    "death_date": "2025-06-04 13:37:41",
+    "lifespan": 0.18208591938018798
+  },
+  {
+    "name": "コーギー",
+    "dog_type": "コーギー",
+    "growth_stage": "子犬",
+    "death_date": "2025-06-04 15:58:20",
+    "lifespan": 0.13329078753789264
+  },
+  {
+    "name": "ミニチュアダックスフンド",
+    "dog_type": "ミニチュアダックスフンド",
+    "growth_stage": "老犬",
+    "death_date": "2025-06-04 16:02:30",
+    "lifespan": 0.09372444947560629
   }
 ]

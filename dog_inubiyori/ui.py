@@ -15,16 +15,24 @@ class UI:
         # フォントの作成
         self.create_fonts()
         
-        # 色の定義
+        # 色の定義 - より洗練された配色に更新
         self.BLACK = (0, 0, 0)
         self.WHITE = (255, 255, 255)
         self.GRAY = (200, 200, 200)
+        self.LIGHT_GRAY = (240, 240, 240)
         self.LIGHT_BLUE = (173, 216, 230)
         self.GREEN = (144, 238, 144)
         self.RED = (255, 99, 71)
         self.YELLOW = (255, 255, 153)
         self.BROWN = (139, 69, 19)
         self.HOVER_COLOR = (255, 220, 180)  # ホバー時の色
+        self.BUTTON_COLOR = (230, 230, 250)  # 通常ボタンの色
+        self.ACTION_BUTTON_COLOR = (200, 230, 255)  # アクションボタンの色
+        self.BACKGROUND_COLOR = (250, 250, 255)  # 背景色
+        
+        # UI要素のサイズ設定
+        self.BUTTON_RADIUS = 10  # ボタンの角丸半径
+        self.STATUS_BAR_HEIGHT = 20  # ステータスバーの高さ
         
         # プレースホルダー画像の作成
         self.placeholder_images = self.create_placeholder_images()
@@ -49,7 +57,7 @@ class UI:
         try:
             self.logo_image = pygame.image.load("./dog_inubiyori/assets/logo.png")
             # 画像のアスペクト比を維持したまま適切なサイズに調整
-            logo_width = 200
+            logo_width = 240  # サイズを少し大きく
             aspect_ratio = self.logo_image.get_width() / self.logo_image.get_height()
             logo_height = int(logo_width / aspect_ratio)
             self.logo_image = pygame.transform.scale(self.logo_image, (logo_width, logo_height))
@@ -62,11 +70,13 @@ class UI:
         self.default_title_font = pygame.font.Font(None, 48)
         self.default_normal_font = pygame.font.Font(None, 32)
         self.default_small_font = pygame.font.Font(None, 24)
+        self.default_tiny_font = pygame.font.Font(None, 18)  # 小さいテキスト用
         
         # 日本語フォント
         self.title_font = Utils.get_japanese_font(48)
         self.normal_font = Utils.get_japanese_font(32)
         self.small_font = Utils.get_japanese_font(24)
+        self.tiny_font = Utils.get_japanese_font(18)  # 小さいテキスト用
         
         # フォントが正しく読み込めなかった場合はデフォルトフォントを使用
         if not self.title_font:
@@ -75,6 +85,8 @@ class UI:
             self.normal_font = self.default_normal_font
         if not self.small_font:
             self.small_font = self.default_small_font
+        if not self.tiny_font:
+            self.tiny_font = self.default_tiny_font
     
     def create_placeholder_images(self):
         """プレースホルダー画像を作成"""
@@ -84,16 +96,24 @@ class UI:
         
         for i, dog_type in enumerate(dog_types):
             # 犬の選択画面用の小さい画像
-            small_img = pygame.Surface((100, 100))
-            small_img.fill(colors[i])
-            pygame.draw.ellipse(small_img, (255, 255, 255), (10, 10, 80, 80))
-            pygame.draw.ellipse(small_img, colors[i], (15, 15, 70, 70))
+            small_img = pygame.Surface((100, 100), pygame.SRCALPHA)
+            pygame.draw.ellipse(small_img, colors[i], (10, 10, 80, 80))
+            pygame.draw.ellipse(small_img, (255, 255, 255), (15, 15, 70, 70), 2)
+            
+            # 目と鼻を追加してより犬らしく
+            pygame.draw.circle(small_img, (0, 0, 0), (35, 40), 5)  # 左目
+            pygame.draw.circle(small_img, (0, 0, 0), (65, 40), 5)  # 右目
+            pygame.draw.ellipse(small_img, (0, 0, 0), (45, 55, 10, 8))  # 鼻
             
             # メインゲーム用の大きい画像
-            large_img = pygame.Surface((200, 200))
-            large_img.fill(colors[i])
-            pygame.draw.ellipse(large_img, (255, 255, 255), (20, 20, 160, 160))
-            pygame.draw.ellipse(large_img, colors[i], (30, 30, 140, 140))
+            large_img = pygame.Surface((200, 200), pygame.SRCALPHA)
+            pygame.draw.ellipse(large_img, colors[i], (20, 20, 160, 160))
+            pygame.draw.ellipse(large_img, (255, 255, 255), (25, 25, 150, 150), 3)
+            
+            # 目と鼻を追加
+            pygame.draw.circle(large_img, (0, 0, 0), (70, 80), 10)  # 左目
+            pygame.draw.circle(large_img, (0, 0, 0), (130, 80), 10)  # 右目
+            pygame.draw.ellipse(large_img, (0, 0, 0), (95, 110, 20, 15))  # 鼻
             
             images[dog_type] = {
                 "small": small_img,
@@ -106,14 +126,24 @@ class UI:
         """墓石画像を作成"""
         tombstone = pygame.Surface((100, 120), pygame.SRCALPHA)
         
-        # 墓石の形
-        pygame.draw.rect(tombstone, self.GRAY, (20, 40, 60, 80))
-        pygame.draw.rect(tombstone, self.GRAY, (10, 20, 80, 30))
-        pygame.draw.rect(tombstone, self.GRAY, (0, 0, 100, 20))
+        # 墓石の形 - より立体的に
+        # 墓石の本体
+        pygame.draw.rect(tombstone, (180, 180, 180), (20, 40, 60, 80), border_radius=5)
+        # 墓石の上部
+        pygame.draw.rect(tombstone, (190, 190, 190), (10, 20, 80, 30), border_radius=3)
+        pygame.draw.rect(tombstone, (200, 200, 200), (0, 0, 100, 20), border_radius=2)
+        
+        # 墓石に影をつける
+        pygame.draw.line(tombstone, (160, 160, 160), (20, 40), (20, 120), 2)
+        pygame.draw.line(tombstone, (160, 160, 160), (10, 20), (10, 50), 2)
         
         # 墓石の文字
         rip_text = self.small_font.render("R.I.P.", True, self.BLACK)
         tombstone.blit(rip_text, (50 - rip_text.get_width() // 2, 50))
+        
+        # 十字架を追加
+        pygame.draw.rect(tombstone, (100, 100, 100), (45, 75, 10, 30), border_radius=2)
+        pygame.draw.rect(tombstone, (100, 100, 100), (35, 85, 30, 10), border_radius=2)
         
         return tombstone
     
@@ -127,6 +157,9 @@ class UI:
     
     def draw_dog_selection(self, dog_types):
         """犬の選択画面を描画"""
+        # 背景色を設定
+        self.screen.fill(self.BACKGROUND_COLOR)
+        
         # タイトル
         try:
             title = self.title_font.render("あなたの犬を選んでください", True, self.BLACK)
@@ -134,7 +167,12 @@ class UI:
             # フォールバック: 英語で表示
             title = self.default_title_font.render("Choose your dog", True, self.BLACK)
         
-        self.screen.blit(title, (self.width // 2 - title.get_width() // 2, 50))
+        # タイトル背景
+        title_bg_rect = pygame.Rect(0, 30, self.width, 60)
+        pygame.draw.rect(self.screen, (240, 240, 255), title_bg_rect)
+        pygame.draw.line(self.screen, (220, 220, 240), (0, title_bg_rect.bottom), (self.width, title_bg_rect.bottom), 2)
+        
+        self.screen.blit(title, (self.width // 2 - title.get_width() // 2, 40))
         
         # 犬の選択肢
         dog_names = {
@@ -146,6 +184,11 @@ class UI:
         # 犬の画像を読み込む
         dog_images = {}
         try:
+            # コーギーの画像
+            corgi_img = pygame.image.load("./dog_inubiyori/assets/dogs/corgi.png")
+            corgi_img = pygame.transform.scale(corgi_img, (150, 150))
+            dog_images["コーギー"] = corgi_img
+            
             # ダックスフンドの画像
             dachshund_img = pygame.image.load("./dog_inubiyori/assets/dogs/dachsuhund.png")
             dachshund_img = pygame.transform.scale(dachshund_img, (150, 150))
@@ -155,23 +198,16 @@ class UI:
             shiba_img = pygame.image.load("./dog_inubiyori/assets/dogs/shiba.png")
             shiba_img = pygame.transform.scale(shiba_img, (150, 150))
             dog_images["柴犬"] = shiba_img
-            
-            # コーギーの画像（ない場合はプレースホルダー）
-            try:
-                corgi_img = pygame.image.load("./dog_inubiyori/assets/dogs/corgi.png")
-                corgi_img = pygame.transform.scale(corgi_img, (150, 150))
-                dog_images["コーギー"] = corgi_img
-            except:
-                dog_images["コーギー"] = self.placeholder_images["コーギー"]["large"]
-        except:
+        except Exception as e:
+            print(f"画像読み込みエラー: {e}")
             # 画像が読み込めない場合はプレースホルダーを使用
             for dog_type in dog_types:
                 dog_images[dog_type] = self.placeholder_images[dog_type]["large"]
         
         # 犬の選択ボタンを描画
-        button_width = 200
-        button_height = 220
-        margin = 50
+        button_width = 220
+        button_height = 250
+        margin = 40
         
         # マウス位置を取得してホバー効果を適用
         mouse_pos = pygame.mouse.get_pos()
@@ -184,17 +220,20 @@ class UI:
             is_hover = x <= mouse_pos[0] <= x + button_width and y <= mouse_pos[1] <= y + button_height
             
             # ボタンの背景
-            button_color = self.HOVER_COLOR if is_hover else (230, 230, 250)  # ホバー時は色を変える
+            button_color = self.HOVER_COLOR if is_hover else self.BUTTON_COLOR
             pygame.draw.rect(self.screen, button_color, (x, y, button_width, button_height), border_radius=15)
-            pygame.draw.rect(self.screen, self.BLACK, (x, y, button_width, button_height), 2, border_radius=15)
+            
+            # ボタンの枠線 - ホバー時は太く
+            border_width = 3 if is_hover else 2
+            pygame.draw.rect(self.screen, self.BLACK, (x, y, button_width, button_height), border_width, border_radius=15)
             
             # 犬の画像
             if dog_type in dog_images:
                 dog_img = dog_images[dog_type]
-                self.screen.blit(dog_img, (x + button_width // 2 - dog_img.get_width() // 2, y + 20))
+                self.screen.blit(dog_img, (x + button_width // 2 - dog_img.get_width() // 2, y + 30))
             else:
                 # 画像がない場合はプレースホルダー
-                self.screen.blit(self.placeholder_images[dog_type]["large"], (x + button_width // 2 - 75, y + 20))
+                self.screen.blit(self.placeholder_images[dog_type]["large"], (x + button_width // 2 - 75, y + 30))
             
             # 犬の名前
             display_name = dog_names.get(dog_type, dog_type)
@@ -204,7 +243,11 @@ class UI:
                 # フォールバック: 英語で表示
                 name = self.default_normal_font.render(dog_names.get(dog_type, dog_type), True, self.BLACK)
             
-            self.screen.blit(name, (x + button_width // 2 - name.get_width() // 2, y + button_height - 40))
+            # 名前の背景
+            name_bg_rect = pygame.Rect(x + 10, y + button_height - 60, button_width - 20, 40)
+            pygame.draw.rect(self.screen, (255, 255, 255, 180), name_bg_rect, border_radius=8)
+            
+            self.screen.blit(name, (x + button_width // 2 - name.get_width() // 2, y + button_height - 50))
         
         # メニューボタン（右上に配置）
         self.draw_menu_buttons(["墓地を見る", "トレーナー情報"])
@@ -239,15 +282,18 @@ class UI:
             
             # 右上に配置、タイトルと重ならないように調整
             x = self.width - button_width - 20
-            y = 100 + i * (button_height + margin)
+            y = 20 + i * (button_height + margin)
             
             # ホバー効果の判定
             is_hover = x <= mouse_pos[0] <= x + button_width and y <= mouse_pos[1] <= y + button_height
             
             # ボタンの背景
             button_color = self.HOVER_COLOR if is_hover else self.YELLOW
-            pygame.draw.rect(self.screen, button_color, (x, y, button_width, button_height), border_radius=10)
-            pygame.draw.rect(self.screen, self.BLACK, (x, y, button_width, button_height), 2, border_radius=10)
+            pygame.draw.rect(self.screen, button_color, (x, y, button_width, button_height), border_radius=self.BUTTON_RADIUS)
+            
+            # ボタンの枠線 - ホバー時は太く
+            border_width = 2 if is_hover else 1
+            pygame.draw.rect(self.screen, self.BLACK, (x, y, button_width, button_height), border_width, border_radius=self.BUTTON_RADIUS)
             
             # ボタンのテキスト
             try:
@@ -274,7 +320,7 @@ class UI:
     def draw_loading_screen(self, progress=0):
         """ローディング画面を描画"""
         # 背景を塗りつぶす
-        self.screen.fill(self.WHITE)
+        self.screen.fill(self.BACKGROUND_COLOR)
         
         # ロゴ画像を表示
         if self.logo_image:
@@ -284,15 +330,6 @@ class UI:
         else:
             title_y = self.height // 3
         
-        # タイトル
-        try:
-            title = self.title_font.render("犬のたまごっち", True, self.BLACK)
-        except:
-            # フォールバック: 英語で表示
-            title = self.default_title_font.render("Dog Tamagotchi", True, self.BLACK)
-        
-        self.screen.blit(title, (self.width // 2 - title.get_width() // 2, title_y))
-        
         # ローディングバー
         bar_width = 400
         bar_height = 30
@@ -300,14 +337,15 @@ class UI:
         y = self.height // 2 + 50  # ロゴの下に配置
         
         # バーの背景
-        pygame.draw.rect(self.screen, self.GRAY, (x, y, bar_width, bar_height))
+        pygame.draw.rect(self.screen, self.LIGHT_GRAY, (x, y, bar_width, bar_height), border_radius=8)
         
         # バーの進捗
         progress_width = int(bar_width * progress)
-        pygame.draw.rect(self.screen, self.GREEN, (x, y, progress_width, bar_height))
+        if progress_width > 0:
+            pygame.draw.rect(self.screen, self.GREEN, (x, y, progress_width, bar_height), border_radius=8)
         
         # バーの枠
-        pygame.draw.rect(self.screen, self.BLACK, (x, y, bar_width, bar_height), 2)
+        pygame.draw.rect(self.screen, self.BLACK, (x, y, bar_width, bar_height), 2, border_radius=8)
         
         # ローディングテキスト
         try:
@@ -325,17 +363,24 @@ class UI:
         
         # 進捗に応じて犬のアイコンを表示
         if progress > 0:
+            # 犬の顔
             pygame.draw.circle(self.screen, self.YELLOW, (dog_x, dog_y), dog_icon_size // 2)
             
             # 目
             pygame.draw.circle(self.screen, self.BLACK, (dog_x - 10, dog_y - 5), 5)
             pygame.draw.circle(self.screen, self.BLACK, (dog_x + 10, dog_y - 5), 5)
+            pygame.draw.circle(self.screen, self.WHITE, (dog_x - 8, dog_y - 7), 2)  # 目の光
+            pygame.draw.circle(self.screen, self.WHITE, (dog_x + 12, dog_y - 7), 2)  # 目の光
             
             # 鼻
             pygame.draw.circle(self.screen, self.BLACK, (dog_x, dog_y + 5), 3)
             
             # 口（笑顔）
             pygame.draw.arc(self.screen, self.BLACK, (dog_x - 15, dog_y, 30, 20), 0, 3.14, 2)
+            
+            # 耳
+            pygame.draw.ellipse(self.screen, self.BROWN, (dog_x - 25, dog_y - 25, 15, 25))
+            pygame.draw.ellipse(self.screen, self.BROWN, (dog_x + 10, dog_y - 25, 15, 25))
         
         # 進捗率テキスト
         progress_text = self.default_small_font.render(f"{int(progress * 100)}%", True, self.BLACK)
@@ -346,6 +391,13 @@ class UI:
     
     def draw_main_game(self, dog, game_state):
         """メインゲーム画面を描画"""
+        # 背景を塗りつぶす
+        self.screen.fill(self.BACKGROUND_COLOR)
+        
+        # 上部のヘッダー背景
+        pygame.draw.rect(self.screen, (240, 240, 255), (0, 0, self.width, 120))
+        pygame.draw.line(self.screen, (220, 220, 240), (0, 120), (self.width, 120), 2)
+        
         # 犬の名前と種類
         display_name = "ダックス" if dog.dog_type == "ミニチュアダックスフンド" else dog.dog_type
         try:
@@ -374,35 +426,66 @@ class UI:
             # フォールバック: 英語で表示
             days_text = self.default_small_font.render(f"Days: {int(dog.lifespan_days)}", True, self.BLACK)
         
-        self.screen.blit(days_text, (self.width // 2 - days_text.get_width() // 2, 110))
+        self.screen.blit(days_text, (self.width // 2 - days_text.get_width() // 2, 100))
+        
+        # 犬のアニメーション表示エリア
+        animation_area_height = 200
+        pygame.draw.rect(self.screen, (250, 250, 255), (0, 130, self.width, animation_area_height))
         
         # 犬のアニメーション
         if dog.is_alive:
-            animation = self.get_animation(dog.dog_type, dog.growth_stage)
-            animation_state = dog.get_animation_state()
-            
-            # アニメーション状態を更新
-            if self.current_animation_state != animation_state:
-                animation.set_animation(animation_state)
-                self.current_animation_state = animation_state
-            
-            # アニメーションを更新
-            animation.update(pygame.time.get_ticks())
-            
-            # アニメーションを描画
-            dog_img = animation.get_current_frame()
-            self.screen.blit(dog_img, (self.width // 2 - dog_img.get_width() // 2, 140))
+            # 犬の画像を表示（アニメーションがない場合）
+            try:
+                if dog.dog_type == "コーギー":
+                    dog_img = pygame.image.load(os.path.join("dog_inubiyori", "assets", "dogs", "corgi.png"))
+                elif dog.dog_type == "ミニチュアダックスフンド":
+                    dog_img = pygame.image.load(os.path.join("dog_inubiyori", "assets", "dogs", "dachsuhund.png"))
+                elif dog.dog_type == "柴犬":
+                    dog_img = pygame.image.load(os.path.join("dog_inubiyori", "assets", "dogs", "shiba.png"))
+                else:
+                    # 未知の犬種の場合はプレースホルダーを使用
+                    dog_img = self.placeholder_images[dog.dog_type]["large"]
+                
+                # 画像サイズを調整
+                dog_img = pygame.transform.scale(dog_img, (180, 180))
+                
+                # アニメーションがある場合はそちらを優先
+                animation = self.get_animation(dog.dog_type, dog.growth_stage)
+                animation_state = dog.get_animation_state()
+                
+                # アニメーション状態を更新
+                if self.current_animation_state != animation_state:
+                    animation.set_animation(animation_state)
+                    self.current_animation_state = animation_state
+                
+                # アニメーションを更新
+                animation.update(pygame.time.get_ticks())
+                
+                # アニメーションフレームを取得
+                animation_frame = animation.get_current_frame()
+                
+                # アニメーションがある場合はそれを表示、なければ静止画を表示
+                if animation_frame:
+                    self.screen.blit(animation_frame, (self.width // 2 - animation_frame.get_width() // 2, 140))
+                else:
+                    self.screen.blit(dog_img, (self.width // 2 - dog_img.get_width() // 2, 140))
+            except Exception as e:
+                print(f"画像読み込みエラー: {e}")
+                # エラーが発生した場合はプレースホルダーを使用
+                self.screen.blit(self.placeholder_images[dog.dog_type]["large"], (self.width // 2 - 100, 140))
         else:
             # 死亡時は墓石を表示
-            self.screen.blit(self.tombstone_image, (self.width // 2 - 50, 140))
+            self.screen.blit(self.tombstone_image, (self.width // 2 - 50, 170))
         
         # 犬のステータス
         self.draw_status_bars(dog, 350)  # Y座標を調整
         
-        # メッセージ表示用の背景（読みやすくするため）
-        message_y = 480  # メッセージ位置を上に移動
+        # メッセージ表示用の背景
+        message_y = 480
         message_height = 60
-        pygame.draw.rect(self.screen, (240, 240, 240), (0, message_y - 10, self.width, message_height), border_radius=5)
+        message_bg_rect = pygame.Rect(20, message_y - 10, self.width - 40, message_height)
+        pygame.draw.rect(self.screen, (240, 240, 255), message_bg_rect, border_radius=10)
+        pygame.draw.rect(self.screen, (220, 220, 240), message_bg_rect, 2, border_radius=10)
         
         # メッセージ
         try:
@@ -437,14 +520,19 @@ class UI:
             
             message = self.default_normal_font.render(eng_message, True, self.BLACK)
         
+        # メッセージが長すぎる場合は小さいフォントで表示
+        if message.get_width() > message_bg_rect.width - 20:
+            try:
+                message = self.small_font.render(game_state.message, True, self.BLACK)
+            except:
+                message = self.default_small_font.render(eng_message, True, self.BLACK)
+        
         # メッセージ表示位置を調整
-        self.screen.blit(message, (self.width // 2 - message.get_width() // 2, message_y))
+        self.screen.blit(message, (self.width // 2 - message.get_width() // 2, message_y + 10))
         
         # デモ用ショートカットボタン（右下に配置）
         if dog.is_alive:
             self.draw_demo_buttons(dog)
-        
-        # アクションボタンは不要（ステータスバーの横に配置済み）
         
         # 再スタートボタン（死亡時のみ）
         if not dog.is_alive:
@@ -466,16 +554,25 @@ class UI:
         
         # ステータスバーの背景
         status_bg_height = len(status_items) * 30 + 20
-        pygame.draw.rect(self.screen, (245, 245, 245), (10, start_y - 10, 450, status_bg_height), border_radius=10)
+        pygame.draw.rect(self.screen, (245, 245, 255), (10, start_y - 10, self.width - 20, status_bg_height), border_radius=10)
+        pygame.draw.rect(self.screen, (220, 220, 240), (10, start_y - 10, self.width - 20, status_bg_height), 2, border_radius=10)
         
         self.action_buttons = []  # ボタンリストをクリア
         
         # マウス位置を取得してホバー効果を適用
         mouse_pos = pygame.mouse.get_pos()
         
+        # ステータスを2列に分けて表示
+        items_per_column = 3
+        column_width = 220
+        
         for i, (jp_name, en_name, value, color, action) in enumerate(status_items):
-            x = 20
-            y = start_y + i * 30
+            # 列と行を計算
+            column = i // items_per_column
+            row = i % items_per_column
+            
+            x = 30 + column * column_width
+            y = start_y + row * 30
             
             # ステータス名
             try:
@@ -484,55 +581,86 @@ class UI:
                 # フォールバック: 英語で表示
                 status_name = self.default_small_font.render(en_name, True, self.BLACK)
             
-            self.screen.blit(status_name, (x, y))
+            # ステータス名のフォントサイズを小さく
+            if status_name.get_height() > 18:
+                try:
+                    smaller_font = Utils.get_japanese_font(16)
+                    status_name = smaller_font.render(jp_name, True, self.BLACK)
+                except:
+                    smaller_font = pygame.font.Font(None, 16)
+                    status_name = smaller_font.render(en_name, True, self.BLACK)
+            
+            self.screen.blit(status_name, (x, y + 2))  # 垂直位置を微調整
             
             # ステータスバーの背景
-            pygame.draw.rect(self.screen, self.GRAY, (x + 100, y, 150, 20))
+            bar_width = 100
+            bar_x = x + 70
+            bar_y = y + 2  # 垂直位置を微調整
+            
+            pygame.draw.rect(self.screen, self.LIGHT_GRAY, (bar_x, bar_y, bar_width, self.STATUS_BAR_HEIGHT), border_radius=5)
             
             # ステータスバーの値
-            pygame.draw.rect(self.screen, color, (x + 100, y, value * 1.5, 20))
+            value_width = min(value * bar_width / 100, bar_width)  # 値に応じた幅
+            if value_width > 0:  # 値が0より大きい場合のみ描画
+                pygame.draw.rect(self.screen, color, (bar_x, bar_y, value_width, self.STATUS_BAR_HEIGHT), border_radius=5)
+            
+            # ステータスバーの枠
+            pygame.draw.rect(self.screen, self.BLACK, (bar_x, bar_y, bar_width, self.STATUS_BAR_HEIGHT), 1, border_radius=5)
             
             # ステータス値
             value_text = self.default_small_font.render(f"{int(value)}", True, self.BLACK)
-            self.screen.blit(value_text, (x + 260, y))
+            # ステータス値のフォントサイズを小さく
+            if value_text.get_height() > 18:
+                value_text = pygame.font.Font(None, 16).render(f"{int(value)}", True, self.BLACK)
+            
+            self.screen.blit(value_text, (bar_x + bar_width + 5, bar_y))
             
             # アクションボタン（対応するアクションがある場合）
             if action and dog.is_alive:
-                button_width = 120
-                button_height = 25
-                button_x = x + 300
-                button_y = y - 2
+                button_width = 140
+                button_height = 28
+                button_x = self.width - button_width - 30
+                button_y = y
                 
                 # ホバー効果の判定
                 is_hover = button_x <= mouse_pos[0] <= button_x + button_width and button_y <= mouse_pos[1] <= button_y + button_height
                 
                 # ボタンの背景
-                button_color = self.HOVER_COLOR if is_hover else self.LIGHT_BLUE
-                pygame.draw.rect(self.screen, button_color, (button_x, button_y, button_width, button_height), border_radius=5)
-                pygame.draw.rect(self.screen, self.BLACK, (button_x, button_y, button_width, button_height), 1, border_radius=5)
+                button_color = self.HOVER_COLOR if is_hover else self.ACTION_BUTTON_COLOR
+                pygame.draw.rect(self.screen, button_color, (button_x, button_y, button_width, button_height), border_radius=7)
+                
+                # ボタンの枠線 - ホバー時は太く
+                border_width = 2 if is_hover else 1
+                pygame.draw.rect(self.screen, self.BLACK, (button_x, button_y, button_width, button_height), border_width, border_radius=7)
                 
                 # ボタンのテキスト
                 try:
                     action_text = self.small_font.render(action, True, self.BLACK)
                 except:
-                    # フォールバック: 英語で表示
-                    action_names = {
+                    action_name_map = {
                         "ご飯をあげる": "Feed",
                         "散歩にいく": "Walk",
                         "しつけをする": "Train",
                         "トイレを片付ける": "Clean",
                         "おもちゃで遊ぶ": "Play"
                     }
-                    action_text = self.default_small_font.render(action_names.get(action, action), True, self.BLACK)
+                    action_text = self.default_small_font.render(action_name_map.get(action, action), True, self.BLACK)
                 
-                # テキストが長すぎる場合はフォントサイズを調整
+                # テキストが長すぎる場合はさらに小さいフォントに
                 if action_text.get_width() > button_width - 10:
                     try:
-                        smaller_font = Utils.get_japanese_font(18)  # 小さいフォント
+                        smaller_font = Utils.get_japanese_font(14)
                         action_text = smaller_font.render(action, True, self.BLACK)
                     except:
-                        smaller_font = pygame.font.Font(None, 18)
-                        action_text = smaller_font.render(action_names.get(action, action), True, self.BLACK)
+                        smaller_font = pygame.font.Font(None, 14)
+                        action_name_map = {
+                            "ご飯をあげる": "Feed",
+                            "散歩にいく": "Walk",
+                            "しつけをする": "Train",
+                            "トイレを片付ける": "Clean",
+                            "おもちゃで遊ぶ": "Play"
+                        }
+                        action_text = smaller_font.render(action_name_map.get(action, action), True, self.BLACK)
                 
                 # テキストを中央に配置
                 self.screen.blit(action_text, (button_x + button_width // 2 - action_text.get_width() // 2, 
@@ -573,14 +701,14 @@ class UI:
                     action_text = self.small_font.render(action, True, self.BLACK)
                 except:
                     # フォールバック: 英語で表示
-                    action_names = {
+                    action_name_map = {
                         "ご飯をあげる": "Feed",
                         "散歩にいく": "Walk",
                         "しつけをする": "Train",
                         "トイレを片付ける": "Clean",
                         "おもちゃで遊ぶ": "Play"
                     }
-                    action_text = self.default_small_font.render(action_names.get(action, action), True, self.BLACK)
+                    action_text = self.default_small_font.render(action_name_map.get(action, action), True, self.BLACK)
                 
                 # テキストが長すぎる場合はフォントサイズを調整
                 if action_text.get_width() > button_width - 20:
@@ -589,7 +717,7 @@ class UI:
                         action_text = smaller_font.render(action, True, self.BLACK)
                     except:
                         smaller_font = pygame.font.Font(None, 20)
-                        action_text = smaller_font.render(action_names.get(action, action), True, self.BLACK)
+                        action_text = smaller_font.render(action_name_map.get(action, action), True, self.BLACK)
                 
                 # テキストを中央に配置
                 self.screen.blit(action_text, (x + button_width // 2 - action_text.get_width() // 2, 
@@ -626,14 +754,14 @@ class UI:
                         action_text = self.small_font.render(action, True, self.BLACK)
                     except:
                         # フォールバック: 英語で表示
-                        action_names = {
+                        action_name_map = {
                             "ご飯をあげる": "Feed",
                             "散歩にいく": "Walk",
                             "しつけをする": "Train",
                             "トイレを片付ける": "Clean",
                             "おもちゃで遊ぶ": "Play"
                         }
-                        action_text = self.default_small_font.render(action_names.get(action, action), True, self.BLACK)
+                        action_text = self.default_small_font.render(action_name_map.get(action, action), True, self.BLACK)
                     
                     # テキストが長すぎる場合はフォントサイズを調整
                     if action_text.get_width() > button_width - 20:
@@ -642,7 +770,7 @@ class UI:
                             action_text = smaller_font.render(action, True, self.BLACK)
                         except:
                             smaller_font = pygame.font.Font(None, 20)
-                            action_text = smaller_font.render(action_names.get(action, action), True, self.BLACK)
+                            action_text = smaller_font.render(action_name_map.get(action, action), True, self.BLACK)
                     
                     # テキストを中央に配置
                     self.screen.blit(action_text, (x + button_width // 2 - action_text.get_width() // 2, 
@@ -671,14 +799,14 @@ class UI:
                         action_text = self.small_font.render(action, True, self.BLACK)
                     except:
                         # フォールバック: 英語で表示
-                        action_names = {
+                        action_name_map = {
                             "ご飯をあげる": "Feed",
                             "散歩にいく": "Walk",
                             "しつけをする": "Train",
                             "トイレを片付ける": "Clean",
                             "おもちゃで遊ぶ": "Play"
                         }
-                        action_text = self.default_small_font.render(action_names.get(action, action), True, self.BLACK)
+                        action_text = self.default_small_font.render(action_name_map.get(action, action), True, self.BLACK)
                     
                     # テキストが長すぎる場合はフォントサイズを調整
                     if action_text.get_width() > button_width - 20:
@@ -687,7 +815,7 @@ class UI:
                             action_text = smaller_font.render(action, True, self.BLACK)
                         except:
                             smaller_font = pygame.font.Font(None, 20)
-                            action_text = smaller_font.render(action_names.get(action, action), True, self.BLACK)
+                            action_text = smaller_font.render(action_name_map.get(action, action), True, self.BLACK)
                     
                     # テキストを中央に配置
                     self.screen.blit(action_text, (x + button_width // 2 - action_text.get_width() // 2, 
@@ -700,7 +828,7 @@ class UI:
         """再スタートボタンを描画"""
         self.action_buttons = []
         
-        button_width = 220
+        button_width = 240
         button_height = 60
         x = self.width // 2 - button_width // 2
         y = self.height - 100
@@ -712,7 +840,10 @@ class UI:
         # ボタンの背景
         button_color = self.HOVER_COLOR if is_hover else self.GREEN
         pygame.draw.rect(self.screen, button_color, (x, y, button_width, button_height), border_radius=15)
-        pygame.draw.rect(self.screen, self.BLACK, (x, y, button_width, button_height), 2, border_radius=15)
+        
+        # ボタンの枠線 - ホバー時は太く
+        border_width = 3 if is_hover else 2
+        pygame.draw.rect(self.screen, self.BLACK, (x, y, button_width, button_height), border_width, border_radius=15)
         
         # ボタンのテキスト
         try:
@@ -741,9 +872,18 @@ class UI:
         is_hover = x <= mouse_pos[0] <= x + button_width and y <= mouse_pos[1] <= y + button_height
         
         # ボタンの背景
-        button_color = self.HOVER_COLOR if is_hover else self.LIGHT_BLUE
-        pygame.draw.rect(self.screen, button_color, (x, y, button_width, button_height), border_radius=10)
-        pygame.draw.rect(self.screen, self.BLACK, (x, y, button_width, button_height), 2, border_radius=10)
+        button_color = self.HOVER_COLOR if is_hover else self.ACTION_BUTTON_COLOR
+        pygame.draw.rect(self.screen, button_color, (x, y, button_width, button_height), border_radius=self.BUTTON_RADIUS)
+        
+        # ボタンの枠線 - ホバー時は太く
+        border_width = 2 if is_hover else 1
+        pygame.draw.rect(self.screen, self.BLACK, (x, y, button_width, button_height), border_width, border_radius=self.BUTTON_RADIUS)
+        
+        # 戻る矢印を描画
+        arrow_points = [(x + 20, y + button_height // 2), 
+                        (x + 35, y + button_height // 2 - 10),
+                        (x + 35, y + button_height // 2 + 10)]
+        pygame.draw.polygon(self.screen, self.BLACK, arrow_points)
         
         # ボタンのテキスト
         try:
@@ -752,8 +892,7 @@ class UI:
             # フォールバック: 英語で表示
             back_text = self.default_normal_font.render("Back", True, self.BLACK)
         
-        self.screen.blit(back_text, (x + button_width // 2 - back_text.get_width() // 2, 
-                                    y + button_height // 2 - back_text.get_height() // 2))
+        self.screen.blit(back_text, (x + 45, y + button_height // 2 - back_text.get_height() // 2))
         
         # ボタンの位置を保存
         self.action_buttons.append((x, y, button_width, button_height, "back"))
@@ -768,6 +907,13 @@ class UI:
     
     def draw_graveyard(self, graveyard):
         """墓地画面を描画"""
+        # 背景を塗りつぶす
+        self.screen.fill((240, 240, 245))  # 墓地用の薄暗い背景色
+        
+        # タイトル背景
+        pygame.draw.rect(self.screen, (220, 220, 230), (0, 0, self.width, 80))
+        pygame.draw.line(self.screen, (200, 200, 210), (0, 80), (self.width, 80), 2)
+        
         # タイトル
         try:
             title = self.title_font.render("犬の墓地", True, self.BLACK)
@@ -785,7 +931,20 @@ class UI:
                 # フォールバック: 英語で表示
                 message = self.default_normal_font.render("No graves yet", True, self.BLACK)
             
-            self.screen.blit(message, (self.width // 2 - message.get_width() // 2, self.height // 2))
+            # メッセージの背景
+            message_width = message.get_width() + 40
+            message_height = message.get_height() + 20
+            message_x = self.width // 2 - message_width // 2
+            message_y = self.height // 2 - message_height // 2
+            
+            pygame.draw.rect(self.screen, (255, 255, 255), 
+                            (message_x, message_y, message_width, message_height), 
+                            border_radius=10)
+            pygame.draw.rect(self.screen, (200, 200, 210), 
+                            (message_x, message_y, message_width, message_height), 
+                            2, border_radius=10)
+            
+            self.screen.blit(message, (self.width // 2 - message.get_width() // 2, self.height // 2 - message.get_height() // 2))
         else:
             # 墓石を描画
             max_per_row = 3
@@ -795,6 +954,19 @@ class UI:
                 
                 x = self.width // 4 * (col + 1) - 50
                 y = 100 + row * 180  # 間隔を狭める
+                
+                # 墓石の背景
+                grave_bg_width = 120
+                grave_bg_height = 160
+                grave_bg_x = x - 10
+                grave_bg_y = y - 10
+                
+                pygame.draw.rect(self.screen, (230, 230, 235), 
+                                (grave_bg_x, grave_bg_y, grave_bg_width, grave_bg_height), 
+                                border_radius=8)
+                pygame.draw.rect(self.screen, (210, 210, 220), 
+                                (grave_bg_x, grave_bg_y, grave_bg_width, grave_bg_height), 
+                                2, border_radius=8)
                 
                 # 墓石
                 self.screen.blit(self.tombstone_image, (x, y))
@@ -821,6 +993,16 @@ class UI:
                         True, self.BLACK
                     )
                 
+                # テキストが長すぎる場合は小さいフォントで表示
+                if dog_info.get_width() > grave_bg_width - 10:
+                    try:
+                        dog_info = self.tiny_font.render(f"{display_type} ({grave['growth_stage']})", True, self.BLACK)
+                    except:
+                        dog_info = self.default_tiny_font.render(
+                            f"{dog_names.get(grave['dog_type'], grave['dog_type'])} ({growth_names.get(grave['growth_stage'], grave['growth_stage'])})", 
+                            True, self.BLACK
+                        )
+                
                 self.screen.blit(dog_info, (x + 50 - dog_info.get_width() // 2, y + 150))
                 
                 # 生存日数
@@ -837,6 +1019,13 @@ class UI:
     
     def draw_trainer_info(self, trainer_data):
         """トレーナー情報画面を描画"""
+        # 背景を塗りつぶす
+        self.screen.fill(self.BACKGROUND_COLOR)
+        
+        # タイトル背景
+        pygame.draw.rect(self.screen, (240, 240, 255), (0, 0, self.width, 80))
+        pygame.draw.line(self.screen, (220, 220, 240), (0, 80), (self.width, 80), 2)
+        
         # タイトル
         try:
             title = self.title_font.render("トレーナー情報", True, self.BLACK)
@@ -846,6 +1035,19 @@ class UI:
         
         self.screen.blit(title, (self.width // 2 - title.get_width() // 2, 20))
         
+        # トレーナー情報の背景
+        info_bg_width = self.width - 40
+        info_bg_height = self.height - 150
+        info_bg_x = 20
+        info_bg_y = 100
+        
+        pygame.draw.rect(self.screen, (250, 250, 255), 
+                        (info_bg_x, info_bg_y, info_bg_width, info_bg_height), 
+                        border_radius=15)
+        pygame.draw.rect(self.screen, (230, 230, 245), 
+                        (info_bg_x, info_bg_y, info_bg_width, info_bg_height), 
+                        2, border_radius=15)
+        
         # トレーナーレベル
         try:
             level_text = self.normal_font.render(f"トレーナーレベル: {trainer_data['trainer_level']}", True, self.BLACK)
@@ -853,20 +1055,60 @@ class UI:
             # フォールバック: 英語で表示
             level_text = self.default_normal_font.render(f"Trainer Level: {trainer_data['trainer_level']}", True, self.BLACK)
         
-        self.screen.blit(level_text, (self.width // 2 - level_text.get_width() // 2, 80))
+        self.screen.blit(level_text, (self.width // 2 - level_text.get_width() // 2, 120))
         
-        # 経験値
+        # 経験値バー
+        exp_bar_width = 300
+        exp_bar_height = 20
+        exp_bar_x = self.width // 2 - exp_bar_width // 2
+        exp_bar_y = 160
+        
+        # 経験値の計算
+        current_exp = trainer_data['trainer_exp']
+        max_exp = trainer_data['trainer_level'] * 100
+        exp_ratio = min(1.0, current_exp / max_exp if max_exp > 0 else 0)
+        
+        # 経験値バーの背景
+        pygame.draw.rect(self.screen, self.LIGHT_GRAY, 
+                        (exp_bar_x, exp_bar_y, exp_bar_width, exp_bar_height), 
+                        border_radius=5)
+        
+        # 経験値バーの進捗
+        if exp_ratio > 0:
+            pygame.draw.rect(self.screen, (100, 200, 255), 
+                            (exp_bar_x, exp_bar_y, int(exp_bar_width * exp_ratio), exp_bar_height), 
+                            border_radius=5)
+        
+        # 経験値バーの枠
+        pygame.draw.rect(self.screen, self.BLACK, 
+                        (exp_bar_x, exp_bar_y, exp_bar_width, exp_bar_height), 
+                        1, border_radius=5)
+        
+        # 経験値テキスト
         try:
-            exp_text = self.normal_font.render(f"経験値: {trainer_data['trainer_exp']} / {trainer_data['trainer_level'] * 100}", True, self.BLACK)
+            exp_text = self.small_font.render(f"経験値: {current_exp} / {max_exp}", True, self.BLACK)
         except:
             # フォールバック: 英語で表示
-            exp_text = self.default_normal_font.render(f"EXP: {trainer_data['trainer_exp']} / {trainer_data['trainer_level'] * 100}", True, self.BLACK)
+            exp_text = self.default_small_font.render(f"EXP: {current_exp} / {max_exp}", True, self.BLACK)
         
-        self.screen.blit(exp_text, (self.width // 2 - exp_text.get_width() // 2, 120))
+        self.screen.blit(exp_text, (self.width // 2 - exp_text.get_width() // 2, exp_bar_y + exp_bar_height + 10))
         
         # 育てた犬の数
         dogs_raised = trainer_data["dogs_raised"]
         total_dogs = sum(dogs_raised.values())
+        
+        # 犬の総数の背景
+        dogs_bg_width = 300
+        dogs_bg_height = 40
+        dogs_bg_x = self.width // 2 - dogs_bg_width // 2
+        dogs_bg_y = 220
+        
+        pygame.draw.rect(self.screen, (245, 245, 255), 
+                        (dogs_bg_x, dogs_bg_y, dogs_bg_width, dogs_bg_height), 
+                        border_radius=8)
+        pygame.draw.rect(self.screen, (230, 230, 245), 
+                        (dogs_bg_x, dogs_bg_y, dogs_bg_width, dogs_bg_height), 
+                        1, border_radius=8)
         
         try:
             dogs_text = self.normal_font.render(f"育てた犬の総数: {total_dogs}", True, self.BLACK)
@@ -874,10 +1116,10 @@ class UI:
             # フォールバック: 英語で表示
             dogs_text = self.default_normal_font.render(f"Total Dogs Raised: {total_dogs}", True, self.BLACK)
         
-        self.screen.blit(dogs_text, (self.width // 2 - dogs_text.get_width() // 2, 160))
+        self.screen.blit(dogs_text, (self.width // 2 - dogs_text.get_width() // 2, dogs_bg_y + 5))
         
         # 犬種ごとの育成数
-        y = 200
+        y = 280
         for dog_type, count in dogs_raised.items():
             display_type = "ダックス" if dog_type == "ミニチュアダックスフンド" else dog_type
             try:
@@ -890,6 +1132,19 @@ class UI:
             self.screen.blit(dog_text, (self.width // 2 - dog_text.get_width() // 2, y))
             y += 30
         
+        # 死亡回数と最大成長段階の背景
+        stats_bg_width = 400
+        stats_bg_height = 80
+        stats_bg_x = self.width // 2 - stats_bg_width // 2
+        stats_bg_y = y + 10
+        
+        pygame.draw.rect(self.screen, (245, 245, 255), 
+                        (stats_bg_x, stats_bg_y, stats_bg_width, stats_bg_height), 
+                        border_radius=8)
+        pygame.draw.rect(self.screen, (230, 230, 245), 
+                        (stats_bg_x, stats_bg_y, stats_bg_width, stats_bg_height), 
+                        1, border_radius=8)
+        
         # 死亡回数
         try:
             deaths_text = self.normal_font.render(f"死亡回数: {trainer_data['total_deaths']}", True, self.BLACK)
@@ -897,7 +1152,7 @@ class UI:
             # フォールバック: 英語で表示
             deaths_text = self.default_normal_font.render(f"Total Deaths: {trainer_data['total_deaths']}", True, self.BLACK)
         
-        self.screen.blit(deaths_text, (self.width // 2 - deaths_text.get_width() // 2, y + 20))
+        self.screen.blit(deaths_text, (self.width // 2 - deaths_text.get_width() // 2, stats_bg_y + 10))
         
         # 最大成長段階
         try:
@@ -907,18 +1162,31 @@ class UI:
             growth_names = {"子犬": "Puppy", "成犬": "Adult", "老犬": "Senior"}
             max_growth_text = self.default_normal_font.render(f"Max Growth Stage: {growth_names.get(trainer_data['max_growth_stage'], trainer_data['max_growth_stage'])}", True, self.BLACK)
         
-        self.screen.blit(max_growth_text, (self.width // 2 - max_growth_text.get_width() // 2, y + 60))
+        self.screen.blit(max_growth_text, (self.width // 2 - max_growth_text.get_width() // 2, stats_bg_y + 45))
         
         # トレーナーボーナス
         bonuses = trainer_data["bonuses"]
         
+        # ボーナスのタイトル背景
+        bonus_title_bg_width = 300
+        bonus_title_bg_height = 40
+        bonus_title_bg_x = self.width // 2 - bonus_title_bg_width // 2
+        bonus_title_bg_y = stats_bg_y + stats_bg_height + 20
+        
+        pygame.draw.rect(self.screen, (240, 240, 255), 
+                        (bonus_title_bg_x, bonus_title_bg_y, bonus_title_bg_width, bonus_title_bg_height), 
+                        border_radius=8)
+        pygame.draw.rect(self.screen, (220, 220, 240), 
+                        (bonus_title_bg_x, bonus_title_bg_y, bonus_title_bg_width, bonus_title_bg_height), 
+                        2, border_radius=8)
+        
         try:
-            bonus_text = self.normal_font.render("トレーナーボーナス:", True, self.BLACK)
+            bonus_text = self.normal_font.render("トレーナーボーナス", True, self.BLACK)
         except:
             # フォールバック: 英語で表示
-            bonus_text = self.default_normal_font.render("Trainer Bonuses:", True, self.BLACK)
+            bonus_text = self.default_normal_font.render("Trainer Bonuses", True, self.BLACK)
         
-        self.screen.blit(bonus_text, (self.width // 2 - bonus_text.get_width() // 2, y + 100))
+        self.screen.blit(bonus_text, (self.width // 2 - bonus_text.get_width() // 2, bonus_title_bg_y + 5))
         
         # ボーナス情報を2列に分けて表示
         bonus_items = list(bonuses.items())
@@ -933,32 +1201,43 @@ class UI:
             "energy_bonus": ("元気度効果", "Energy Effect")
         }
         
+        # ボーナス項目の背景
+        bonus_bg_width = self.width - 80
+        bonus_bg_height = 120
+        bonus_bg_x = 40
+        bonus_bg_y = bonus_title_bg_y + bonus_title_bg_height + 10
+        
+        pygame.draw.rect(self.screen, (250, 250, 255), 
+                        (bonus_bg_x, bonus_bg_y, bonus_bg_width, bonus_bg_height), 
+                        border_radius=8)
+        pygame.draw.rect(self.screen, (230, 230, 245), 
+                        (bonus_bg_x, bonus_bg_y, bonus_bg_width, bonus_bg_height), 
+                        1, border_radius=8)
+        
         # 1列目
-        bonus_y = y + 140
+        bonus_y = bonus_bg_y + 20
+        col1_x = self.width // 4
         for bonus_name, bonus_value in col1_items:
             jp_name, en_name = name_map.get(bonus_name, (bonus_name, bonus_name))
-            
             try:
                 bonus_item_text = self.small_font.render(f"{jp_name}: x{bonus_value:.2f}", True, self.BLACK)
             except:
-                # フォールバック: 英語で表示
                 bonus_item_text = self.default_small_font.render(f"{en_name}: x{bonus_value:.2f}", True, self.BLACK)
             
-            self.screen.blit(bonus_item_text, (self.width // 4 - bonus_item_text.get_width() // 2, bonus_y))
+            self.screen.blit(bonus_item_text, (col1_x - bonus_item_text.get_width() // 2, bonus_y))
             bonus_y += 30
         
         # 2列目
-        bonus_y = y + 140
+        bonus_y = bonus_bg_y + 20
+        col2_x = self.width * 3 // 4
         for bonus_name, bonus_value in col2_items:
             jp_name, en_name = name_map.get(bonus_name, (bonus_name, bonus_name))
-            
             try:
                 bonus_item_text = self.small_font.render(f"{jp_name}: x{bonus_value:.2f}", True, self.BLACK)
             except:
-                # フォールバック: 英語で表示
                 bonus_item_text = self.default_small_font.render(f"{en_name}: x{bonus_value:.2f}", True, self.BLACK)
             
-            self.screen.blit(bonus_item_text, (self.width * 3 // 4 - bonus_item_text.get_width() // 2, bonus_y))
+            self.screen.blit(bonus_item_text, (col2_x - bonus_item_text.get_width() // 2, bonus_y))
             bonus_y += 30
         
         # 戻るボタン
@@ -975,11 +1254,28 @@ class UI:
         button_width = 120
         button_height = 30
         margin = 10
-        start_x = self.width - (button_width + margin) * len(buttons)
+        start_x = self.width - (button_width + margin) * len(buttons) - 10
         y = self.height - 40
         
         # マウス位置を取得してホバー効果を適用
         mouse_pos = pygame.mouse.get_pos()
+        
+        # デモボタンのグループ背景
+        demo_bg_width = (button_width + margin) * len(buttons) + 10
+        demo_bg_height = button_height + 10
+        demo_bg_x = start_x - 5
+        demo_bg_y = y - 5
+        
+        pygame.draw.rect(self.screen, (255, 240, 240), 
+                        (demo_bg_x, demo_bg_y, demo_bg_width, demo_bg_height), 
+                        border_radius=5)
+        pygame.draw.rect(self.screen, (255, 200, 200), 
+                        (demo_bg_x, demo_bg_y, demo_bg_width, demo_bg_height), 
+                        1, border_radius=5)
+        
+        # デモラベル
+        demo_label = self.tiny_font.render("デモ機能:", True, (150, 50, 50))
+        self.screen.blit(demo_label, (demo_bg_x + 5, demo_bg_y - 15))
         
         for i, (label, action) in enumerate(buttons):
             x = start_x + i * (button_width + margin)
@@ -988,17 +1284,27 @@ class UI:
             is_hover = x <= mouse_pos[0] <= x + button_width and y <= mouse_pos[1] <= y + button_height
             
             # ボタンの背景
-            button_color = self.HOVER_COLOR if is_hover else (200, 100, 100)  # 赤っぽい色
+            button_color = self.HOVER_COLOR if is_hover else (255, 180, 180)  # 赤っぽい色
             pygame.draw.rect(self.screen, button_color, (x, y, button_width, button_height), border_radius=5)
-            pygame.draw.rect(self.screen, self.BLACK, (x, y, button_width, button_height), 1, border_radius=5)
+            
+            # ボタンの枠線 - ホバー時は太く
+            border_width = 2 if is_hover else 1
+            pygame.draw.rect(self.screen, (150, 50, 50), (x, y, button_width, button_height), border_width, border_radius=5)
             
             # ボタンのテキスト
             try:
-                button_text = self.small_font.render(label, True, self.BLACK)
+                button_text = self.small_font.render(label, True, (100, 0, 0))
             except:
                 # フォールバック: 英語で表示
                 english_labels = {"成長させる": "Grow", "病気にする": "Make Sick", "死亡させる": "Kill"}
-                button_text = self.default_small_font.render(english_labels.get(label, label), True, self.BLACK)
+                button_text = self.default_small_font.render(english_labels.get(label, label), True, (100, 0, 0))
+            
+            # テキストが長すぎる場合は小さいフォントで表示
+            if button_text.get_width() > button_width - 10:
+                try:
+                    button_text = self.tiny_font.render(label, True, (100, 0, 0))
+                except:
+                    button_text = self.default_tiny_font.render(english_labels.get(label, label), True, (100, 0, 0))
             
             # テキストを中央に配置
             self.screen.blit(button_text, (x + button_width // 2 - button_text.get_width() // 2, 
