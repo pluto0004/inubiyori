@@ -5,6 +5,9 @@ class Dog:
         self.dog_type = dog_type
         self.name = name if name else dog_type  # 初期値として犬種を名前にする
         
+        # 犬のID（保存用）
+        self.id = None
+        
         # 犬のステータス
         self.hunger = 50      # 満腹度（0-100）
         self.happiness = 50   # 幸福度（0-100）
@@ -264,7 +267,7 @@ class Dog:
     
     def to_dict(self):
         """犬のデータを辞書形式で取得"""
-        return {
+        data = {
             "dog_type": self.dog_type,
             "name": self.name,
             "hunger": self.hunger,
@@ -281,6 +284,12 @@ class Dog:
             "health": self.health,
             "sick_days": self.sick_days
         }
+        
+        # IDがある場合は追加
+        if self.id:
+            data["id"] = self.id
+            
+        return data
     
     def restore_from_save(self, saved_data):
         """保存データから犬の状態を復元"""
@@ -299,6 +308,10 @@ class Dog:
         self.is_alive = saved_data["is_alive"]
         self.health = saved_data["health"]
         self.sick_days = saved_data["sick_days"]
+        
+        # IDがある場合は設定
+        if "id" in saved_data:
+            self.id = saved_data["id"]
         
         # 犬種ごとの特性を再設定
         self.set_dog_traits()

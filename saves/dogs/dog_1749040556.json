@@ -1,0 +1,17 @@
+{
+  "dog_type": "ミニチュアダックスフンド",
+  "name": "mini",
+  "hunger": 99.949307290713,
+  "happiness": 44.858445059061054,
+  "discipline": 77.5,
+  "cleanliness": 49.90563003937404,
+  "energy": 57.056621976375595,
+  "growth_stage": "子犬",
+  "birth_time": 1749040556.512662,
+  "last_update_time": 1749040584.8236501,
+  "growth_points": 3.9246648228168484,
+  "lifespan_days": 0.47184980312983205,
+  "is_alive": true,
+  "health": 100,
+  "sick_days": 0
+}

@@ -36,13 +36,9 @@ class DogTamagotchi:
         
         # 犬の種類
         self.dog_types = ["コーギー", "ミニチュアダックスフンド", "柴犬"]
-        self.dog = None
-        
-        # セーブマネージャー
-        self.save_manager = SaveManager()
         
         # ゲームの状態
-        self.state = self.game_state.state  # "select_dog", "main_game", "graveyard", "trainer_info"
+        self.state = self.game_state.state  # "dog_management", "select_dog", "main_game", "graveyard", "trainer_info"
         
         # 最後の更新時間
         self.last_update_time = time.time()
@@ -118,7 +114,13 @@ class DogTamagotchi:
                 if event.type == pygame.QUIT:
                     self.quit_game()
                 
-                if self.state == "select_dog":
+                # --- キーボードイベントのハンドリング ---
+                if self.state == "main_game" and self.game_state.dog:
+                    self.ui.handle_key_event(event, self.game_state.dog)
+                
+                if self.state == "dog_management":
+                    self.handle_dog_management(event)
+                elif self.state == "select_dog":
                     self.handle_dog_selection(event)
                 elif self.state == "main_game":
                     self.handle_main_game(event)
@@ -145,8 +147,8 @@ class DogTamagotchi:
     
     def update_music(self):
         """状態に応じて音楽を更新"""
-        if self.state == "select_dog":
-            # タイトル画面では opening 音楽
+        if self.state == "select_dog" or self.state == "dog_management":
+            # タイトル画面や犬管理画面では opening 音楽
             self.music_manager.play_music("opening")
         elif self.state == "main_game":
             if self.game_state.dog and not self.game_state.dog.is_alive:
@@ -156,34 +158,200 @@ class DogTamagotchi:
                 # 通常のゲーム画面では game 音楽
                 self.music_manager.play_music("game")
     
+    def handle_dog_management(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pos = pygame.mouse.get_pos()
+            
+            # 犬の選択をチェック
+            selected_dog_id = self.ui.check_dog_selection_from_list(mouse_pos)
+            if selected_dog_id is not None:
+                self.game_state.select_dog(selected_dog_id)
+                return
+            
+            # アクションボタンのチェック
+            action = self.ui.check_action_selection(mouse_pos)
+            if action == "add_dog":
+                self.game_state.add_new_dog()
+                return
+            elif action == "volume_up":
+                # 音量を上げる
+                new_volume = self.ui.update_volume(0.1)
+                self.music_manager.set_volume(new_volume)
+            elif action == "volume_down":
+                # 音量を下げる
+                new_volume = self.ui.update_volume(-0.1)
+                self.music_manager.set_volume(new_volume)
+            
+            # メニューボタンのチェック
+            menu_item = self.ui.check_menu_selection(mouse_pos)
+            if menu_item == "墓地を見る":
+                self.game_state.show_graveyard()
+            elif menu_item == "トレーナー情報":
+                self.game_state.show_trainer_info()
+    
     def handle_dog_selection(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             mouse_pos = pygame.mouse.get_pos()
             selected_dog = self.ui.check_dog_selection(mouse_pos, self.dog_types)
             
             if selected_dog is not None:
-                # 犬を選択した場合の処理
-                self.dog = Dog(selected_dog)
-                # 状態を先に更新
-                self.state = "main_game"
-                # ゲーム状態を更新
-                self.game_state.start_game(self.dog)
-                # ゲーム状態の同期を確実に行う
-                self.game_state.state = "main_game"
-                # 音楽を更新
-                self.music_manager.play_music("game")
+                # 犬を選択した場合、名前入力を促す
+                dog_name = self.get_dog_name(selected_dog)
+                
+                # 犬を作成して名前を設定
+                dog = Dog(selected_dog, name=dog_name)
+                
+                # 犬を追加
+                self.game_state.start_game(dog)
                 return  # 他の処理を行わずに関数を抜ける
             
             # メニューボタンのチェック
             menu_item = self.ui.check_menu_selection(mouse_pos)
             if menu_item == "墓地を見る":
                 self.game_state.show_graveyard()
-                # 状態を更新
-                self.state = self.game_state.state
             elif menu_item == "トレーナー情報":
                 self.game_state.show_trainer_info()
-                # 状態を更新
-                self.state = self.game_state.state
+            
+            # 音量調整ボタンのチェック
+            action = self.ui.check_action_selection(mouse_pos)
+            if action == "volume_up":
+                # 音量を上げる
+                new_volume = self.ui.update_volume(0.1)
+                self.music_manager.set_volume(new_volume)
+            elif action == "volume_down":
+                # 音量を下げる
+                new_volume = self.ui.update_volume(-0.1)
+                self.music_manager.set_volume(new_volume)
+    
+    def get_dog_name(self, dog_type):
+        """犬の名前を入力するダイアログを表示"""
+        # デフォルト名は犬種
+        default_name = dog_type
+        
+        # 入力用の変数
+        input_name = ""
+        input_active = True
+        
+        # 入力ループ
+        while input_active:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.quit_game()
+                
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        # Enterキーで確定
+                        input_active = False
+                    elif event.key == pygame.K_BACKSPACE:
+                        # バックスペースで1文字削除
+                        input_name = input_name[:-1]
+                    else:
+                        # 文字入力（10文字まで）
+                        if len(input_name) < 10:
+                            # 入力された文字を追加
+                            char = event.unicode
+                            if char:  # 空でない場合のみ追加
+                                input_name += char
+            
+            # 画面を描画
+            self.screen.fill(self.ui.BACKGROUND_COLOR)
+            
+            # タイトル背景
+            pygame.draw.rect(self.screen, (240, 240, 255), (0, 0, self.width, 80))
+            pygame.draw.line(self.screen, (220, 220, 240), (0, 80), (self.width, 80), 2)
+            
+            # タイトル
+            try:
+                title = self.ui.title_font.render("犬の名前を入力してください", True, self.ui.BLACK)
+            except:
+                # フォールバック: 英語で表示
+                title = self.ui.default_title_font.render("Enter dog name", True, self.ui.BLACK)
+            
+            self.screen.blit(title, (self.width // 2 - title.get_width() // 2, 20))
+            
+            # 犬の種類表示
+            try:
+                dog_type_text = self.ui.normal_font.render(f"犬種: {dog_type}", True, self.ui.BLACK)
+            except:
+                # フォールバック: 英語で表示
+                dog_names = {"コーギー": "Corgi", "ミニチュアダックスフンド": "Dachshund", "柴犬": "Shiba"}
+                dog_type_text = self.ui.default_normal_font.render(f"Dog type: {dog_names.get(dog_type, dog_type)}", True, self.ui.BLACK)
+            
+            self.screen.blit(dog_type_text, (self.width // 2 - dog_type_text.get_width() // 2, 100))
+            
+            # 入力フィールドの背景
+            input_bg_width = 300
+            input_bg_height = 50
+            input_bg_x = self.width // 2 - input_bg_width // 2
+            input_bg_y = 150
+            
+            pygame.draw.rect(self.screen, self.ui.WHITE, 
+                            (input_bg_x, input_bg_y, input_bg_width, input_bg_height), 
+                            border_radius=8)
+            pygame.draw.rect(self.screen, self.ui.BLACK, 
+                            (input_bg_x, input_bg_y, input_bg_width, input_bg_height), 
+                            2, border_radius=8)
+            
+            # 入力テキスト
+            if input_name:
+                try:
+                    name_text = self.ui.normal_font.render(input_name, True, self.ui.BLACK)
+                except:
+                    name_text = self.ui.default_normal_font.render(input_name, True, self.ui.BLACK)
+            else:
+                # プレースホルダー
+                try:
+                    name_text = self.ui.normal_font.render(default_name, True, (150, 150, 150))
+                except:
+                    name_text = self.ui.default_normal_font.render(default_name, True, (150, 150, 150))
+            
+            self.screen.blit(name_text, (input_bg_x + 10, input_bg_y + input_bg_height // 2 - name_text.get_height() // 2))
+            
+            # カーソル表示（点滅）
+            if pygame.time.get_ticks() % 1000 < 500:  # 0.5秒ごとに点滅
+                cursor_x = input_bg_x + 10 + name_text.get_width()
+                cursor_y = input_bg_y + 10
+                pygame.draw.line(self.screen, self.ui.BLACK, 
+                                (cursor_x, cursor_y), 
+                                (cursor_x, cursor_y + input_bg_height - 20), 
+                                2)
+            
+            # 説明テキスト
+            try:
+                info_text = self.ui.small_font.render("Enterキーで確定 (最大10文字)", True, self.ui.BLACK)
+            except:
+                info_text = self.ui.default_small_font.render("Press Enter to confirm (max 10 chars)", True, self.ui.BLACK)
+            
+            self.screen.blit(info_text, (self.width // 2 - info_text.get_width() // 2, input_bg_y + input_bg_height + 10))
+            
+            # 犬の画像表示
+            try:
+                if dog_type == "コーギー":
+                    dog_img = pygame.image.load("./dog_inubiyori/assets/dogs/corgi.png")
+                elif dog_type == "ミニチュアダックスフンド":
+                    dog_img = pygame.image.load("./dog_inubiyori/assets/dogs/dachsuhund.png")
+                elif dog_type == "柴犬":
+                    dog_img = pygame.image.load("./dog_inubiyori/assets/dogs/shiba.png")
+                else:
+                    # 未知の犬種の場合はプレースホルダーを使用
+                    dog_img = self.ui.placeholder_images[dog_type]["large"]
+                
+                # 画像サイズを調整
+                dog_img = pygame.transform.scale(dog_img, (200, 200))
+                self.screen.blit(dog_img, (self.width // 2 - dog_img.get_width() // 2, 220))
+            except Exception as e:
+                print(f"画像読み込みエラー: {e}")
+                # エラーが発生した場合はプレースホルダーを使用
+                self.screen.blit(self.ui.placeholder_images[dog_type]["large"], (self.width // 2 - 100, 220))
+            
+            pygame.display.flip()
+            self.clock.tick(self.fps)
+        
+        # 入力が空の場合はデフォルト名を使用
+        if not input_name:
+            input_name = default_name
+        
+        return input_name
     
     def handle_main_game(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -192,17 +360,21 @@ class DogTamagotchi:
             
             if action is not None:
                 if action == "restart":
-                    self.game_state.restart_game()
-                    # 状態を更新
-                    self.state = self.game_state.state
-                    # 音楽を更新
-                    self.music_manager.play_music("opening")
+                    self.game_state.show_dog_management()
                 elif action.startswith("demo_"):
                     # デモアクションの場合
                     self.game_state.perform_action(action)
                     # 犬が死亡した場合は音楽を変更
                     if action == "demo_kill":
                         self.music_manager.play_music("funeral")
+                elif action == "volume_up":
+                    # 音量を上げる
+                    new_volume = self.ui.update_volume(0.1)
+                    self.music_manager.set_volume(new_volume)
+                elif action == "volume_down":
+                    # 音量を下げる
+                    new_volume = self.ui.update_volume(-0.1)
+                    self.music_manager.set_volume(new_volume)
                 else:
                     self.game_state.perform_action(action)
             
@@ -210,12 +382,8 @@ class DogTamagotchi:
             menu_item = self.ui.check_menu_selection(mouse_pos)
             if menu_item == "墓地を見る":
                 self.game_state.show_graveyard()
-                # 状態を更新
-                self.state = self.game_state.state
             elif menu_item == "トレーナー情報":
                 self.game_state.show_trainer_info()
-                # 状態を更新
-                self.state = self.game_state.state
     
     def handle_graveyard(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -224,16 +392,16 @@ class DogTamagotchi:
             
             if action == "back":
                 self.game_state.back_to_main()
-                # 状態を更新
-                self.state = self.game_state.state
-                # 音楽を更新
-                if self.state == "select_dog":
-                    self.music_manager.play_music("opening")
-                elif self.state == "main_game":
-                    if self.game_state.dog and not self.game_state.dog.is_alive:
-                        self.music_manager.play_music("funeral")
-                    else:
-                        self.music_manager.play_music("game")
+            elif action == "trainer_info":
+                self.game_state.show_trainer_info()
+            elif action == "volume_up":
+                # 音量を上げる
+                new_volume = self.ui.update_volume(0.1)
+                self.music_manager.set_volume(new_volume)
+            elif action == "volume_down":
+                # 音量を下げる
+                new_volume = self.ui.update_volume(-0.1)
+                self.music_manager.set_volume(new_volume)
     
     def handle_trainer_info(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -242,42 +410,37 @@ class DogTamagotchi:
             
             if action == "back":
                 self.game_state.back_to_main()
-                # 状態を更新
-                self.state = self.game_state.state
-                # 音楽を更新
-                if self.state == "select_dog":
-                    self.music_manager.play_music("opening")
-                elif self.state == "main_game":
-                    if self.game_state.dog and not self.game_state.dog.is_alive:
-                        self.music_manager.play_music("funeral")
-                    else:
-                        self.music_manager.play_music("game")
+            elif action == "volume_up":
+                # 音量を上げる
+                new_volume = self.ui.update_volume(0.1)
+                self.music_manager.set_volume(new_volume)
+            elif action == "volume_down":
+                # 音量を下げる
+                new_volume = self.ui.update_volume(-0.1)
+                self.music_manager.set_volume(new_volume)
     
     def update(self):
-        if self.state == "main_game":
-            self.game_state.update()
-            
-            # 犬の状態が変わった場合に音楽を更新
-            if self.game_state.dog:
-                if not self.game_state.dog.is_alive:
-                    self.music_manager.play_music("funeral")
+        self.game_state.update()
     
     def render(self):
         self.screen.fill((255, 255, 255))
         
-        if self.state == "select_dog":
+        if self.state == "dog_management":
+            self.ui.draw_dog_management(self.game_state.dogs)
+        elif self.state == "select_dog":
             self.ui.draw_dog_selection(self.dog_types)
         elif self.state == "main_game":
             self.ui.draw_main_game(self.game_state.dog, self.game_state)
         elif self.state == "graveyard":
-            self.ui.draw_graveyard(self.save_manager.graveyard)
+            self.ui.draw_graveyard(self.game_state.save_manager.graveyard)
         elif self.state == "trainer_info":
-            self.ui.draw_trainer_info(self.save_manager.trainer_data)
+            self.ui.draw_trainer_info(self.game_state.save_manager.trainer_data)
     
     def quit_game(self):
         # ゲームデータを保存
-        if self.game_state.dog and self.game_state.dog.is_alive:
-            self.game_state.save_current_game()
+        for dog in self.game_state.dogs:
+            if dog.is_alive:
+                self.game_state.save_manager.save_dog(dog.to_dict())
         
         # 音楽を停止
         self.music_manager.stop_music()

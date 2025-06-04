@@ -1,12 +1,12 @@
 {
   "trainer_level": 3,
-  "trainer_exp": 80,
+  "trainer_exp": 200,
   "dogs_raised": {
-    "コーギー": 2,
-    "ミニチュアダックスフンド": 3,
-    "柴犬": 4
+    "コーギー": 3,
+    "ミニチュアダックスフンド": 6,
+    "柴犬": 5
   },
-  "total_deaths": 9,
+  "total_deaths": 14,
   "max_growth_stage": "老犬",
   "bonuses": {
     "feed_bonus": 1.1,

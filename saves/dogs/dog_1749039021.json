@@ -1,0 +1,17 @@
+{
+  "dog_type": "柴犬",
+  "name": "shibako",
+  "hunger": 35.24877941449489,
+  "happiness": 41.95387968063355,
+  "discipline": 50,
+  "cleanliness": 44.63591978708896,
+  "energy": 53.486652138392145,
+  "growth_stage": "子犬",
+  "birth_time": 1749039021.046557,
+  "last_update_time": 1749040630.2706208,
+  "growth_points": 29.502441171010382,
+  "lifespan_days": 26.820401064554826,
+  "is_alive": true,
+  "health": 100,
+  "sick_days": 0
+}

@@ -70,19 +70,28 @@ class SaveManager:
         # 墓地データのファイルパス
         self.graveyard_file = os.path.join(self.save_dir, "graveyard.json")
         
-        # 現在のゲームデータのファイルパス
-        self.current_game_file = os.path.join(self.save_dir, "current_game.json")
+        # 犬のデータディレクトリ
+        self.dogs_dir = os.path.join(self.save_dir, "dogs")
+        self.ensure_dogs_directory()
         
         # トレーナーデータの初期化
         self.trainer_data = self.load_trainer_data()
         
         # 墓地データの初期化
         self.graveyard = self.load_graveyard()
+        
+        # 現在飼っている犬のリスト
+        self.current_dogs = self.load_all_dogs()
     
     def ensure_save_directory(self):
         """セーブディレクトリが存在することを確認"""
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
+    
+    def ensure_dogs_directory(self):
+        """犬のデータディレクトリが存在することを確認"""
+        if not os.path.exists(self.dogs_dir):
+            os.makedirs(self.dogs_dir)
     
     def load_trainer_data(self):
         """トレーナーデータをロード"""
@@ -125,12 +134,35 @@ class SaveManager:
         # デフォルトの墓地データ
         return []
     
-    def load_current_game(self):
-        """現在のゲームデータをロード"""
-        if os.path.exists(self.current_game_file):
+    def load_all_dogs(self):
+        """すべての犬のデータをロード"""
+        dogs_data = []
+        
+        if os.path.exists(self.dogs_dir):
+            for filename in os.listdir(self.dogs_dir):
+                if filename.endswith('.json'):
+                    dog_file = os.path.join(self.dogs_dir, filename)
+                    try:
+                        with open(dog_file, 'r', encoding='utf-8') as f:
+                            dog_data = json.load(f)
+                            # 犬のIDをファイル名から取得
+                            dog_id = filename.replace('.json', '')
+                            dog_data['id'] = dog_id
+                            dogs_data.append(dog_data)
+                    except:
+                        pass
+        
+        return dogs_data
+    
+    def load_dog(self, dog_id):
+        """特定の犬のデータをロード"""
+        dog_file = os.path.join(self.dogs_dir, f"{dog_id}.json")
+        if os.path.exists(dog_file):
             try:
-                with open(self.current_game_file, 'r', encoding='utf-8') as f:
-                    return json.load(f)
+                with open(dog_file, 'r', encoding='utf-8') as f:
+                    dog_data = json.load(f)
+                    dog_data['id'] = dog_id
+                    return dog_data
             except:
                 pass
         
@@ -146,15 +178,50 @@ class SaveManager:
         with open(self.graveyard_file, 'w', encoding='utf-8') as f:
             json.dump(self.graveyard, f, ensure_ascii=False, indent=2)
     
-    def save_current_game(self, dog_data):
-        """現在のゲームデータを保存"""
-        with open(self.current_game_file, 'w', encoding='utf-8') as f:
-            json.dump(dog_data, f, ensure_ascii=False, indent=2)
+    def save_dog(self, dog_data):
+        """犬のデータを保存"""
+        # 犬のIDがない場合は新しく生成
+        if 'id' not in dog_data:
+            dog_id = f"dog_{int(time.time())}"
+            dog_data['id'] = dog_id
+        else:
+            dog_id = dog_data['id']
+        
+        # IDはファイル名として使用するため、保存データからは削除
+        save_data = dog_data.copy()
+        if 'id' in save_data:
+            del save_data['id']
+        
+        dog_file = os.path.join(self.dogs_dir, f"{dog_id}.json")
+        with open(dog_file, 'w', encoding='utf-8') as f:
+            json.dump(save_data, f, ensure_ascii=False, indent=2)
+        
+        # 現在の犬リストを更新
+        self.update_dog_in_list(dog_data)
+        
+        return dog_id
     
-    def delete_current_game(self):
-        """現在のゲームデータを削除"""
-        if os.path.exists(self.current_game_file):
-            os.remove(self.current_game_file)
+    def update_dog_in_list(self, dog_data):
+        """犬リストの中の特定の犬を更新"""
+        dog_id = dog_data['id']
+        
+        # 既存の犬を探す
+        for i, dog in enumerate(self.current_dogs):
+            if dog['id'] == dog_id:
+                self.current_dogs[i] = dog_data
+                return
+        
+        # 見つからなければ追加
+        self.current_dogs.append(dog_data)
+    
+    def delete_dog(self, dog_id):
+        """犬のデータを削除"""
+        dog_file = os.path.join(self.dogs_dir, f"{dog_id}.json")
+        if os.path.exists(dog_file):
+            os.remove(dog_file)
+        
+        # 現在の犬リストから削除
+        self.current_dogs = [dog for dog in self.current_dogs if dog['id'] != dog_id]
     
     def add_to_graveyard(self, dog):
         """墓地に犬を追加"""
@@ -191,6 +258,10 @@ class SaveManager:
             exp_gain += 50
         
         self.add_trainer_exp(exp_gain)
+        
+        # 犬のデータを削除
+        if hasattr(dog, 'id'):
+            self.delete_dog(dog.id)
     
     def add_trainer_exp(self, exp):
         """トレーナー経験値を追加し、レベルアップを処理"""

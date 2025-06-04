@@ -1,9 +1,10 @@
 import time
 from utils import SaveManager
+from dog import Dog
 
 class GameState:
     def __init__(self):
-        self.dog = None
+        self.dog = None  # 現在選択されている犬
         self.game_started = False
         self.last_update_time = 0
         self.message = "犬を選んでください"
@@ -16,65 +17,81 @@ class GameState:
         # トレーナーデータの読み込み
         self.trainer_data = self.save_manager.trainer_data
         
-        # 現在のゲームデータの読み込み
-        self.load_current_game()
+        # 現在飼っている犬のリスト
+        self.dogs = []
+        self.load_all_dogs()
         
         # ゲームの状態
-        self.state = "select_dog"  # "select_dog", "main_game", "graveyard", "trainer_info"
+        if len(self.dogs) > 0:
+            self.state = "dog_management"  # 犬がいる場合は犬管理画面から開始
+        else:
+            self.state = "select_dog"  # 犬がいない場合は犬選択画面から開始
     
-    def load_current_game(self):
-        """現在のゲームデータをロード"""
-        saved_game = self.save_manager.load_current_game()
-        if saved_game:
-            from dog import Dog
-            self.dog = Dog(saved_game["dog_type"], saved_game["name"], saved_game)
-            self.game_started = True
-            self.last_update_time = time.time()
-            self.message = f"{self.dog.name}が戻ってきた！"
-            self.message_timeout = time.time() + 3
-            self.state = "main_game"
+    def load_all_dogs(self):
+        """すべての犬をロード"""
+        self.dogs = []
+        for dog_data in self.save_manager.current_dogs:
+            dog = Dog(dog_data["dog_type"], dog_data["name"], dog_data)
+            self.dogs.append(dog)
     
     def start_game(self, dog):
-        """ゲームを開始する"""
+        """ゲームを開始する（新しい犬を追加）"""
+        # 犬を保存して一意のIDを取得
+        dog_id = self.save_manager.save_dog(dog.to_dict())
+        dog.id = dog_id
+        
+        # 犬リストに追加
+        self.dogs.append(dog)
+        
+        # 現在の犬として設定
         self.dog = dog
         self.game_started = True
         self.last_update_time = time.time()
         self.message = f"{dog.dog_type}を選びました！名前は{dog.name}です。"
         self.message_timeout = time.time() + 3  # メッセージを3秒間表示
         self.state = "main_game"  # 状態を明示的に設定
-        
-        # ゲームデータを保存
-        self.save_current_game()
+    
+    def select_dog(self, dog_id):
+        """既存の犬を選択"""
+        for dog in self.dogs:
+            if dog.id == dog_id:
+                self.dog = dog
+                self.game_started = True
+                self.last_update_time = time.time()
+                self.message = f"{dog.name}のお世話を始めます！"
+                self.message_timeout = time.time() + 3
+                self.state = "main_game"
+                break
     
     def update(self):
         """ゲームの状態を更新する"""
-        if not self.game_started or self.dog is None:
-            return
+        # すべての犬を更新
+        for dog in self.dogs:
+            if dog.is_alive:
+                dog.update_status()
+                
+                # 犬が死亡した場合
+                if not dog.is_alive:
+                    self.handle_dog_death(dog)
+                else:
+                    # 生きている犬は保存
+                    self.save_manager.save_dog(dog.to_dict())
         
         current_time = time.time()
         
-        # 犬のステータスを更新
-        self.dog.update_status()
-        self.last_update_time = current_time
-        
-        # 犬が死亡した場合
-        if not self.dog.is_alive:
-            self.handle_dog_death()
-        
-        # メッセージのタイムアウトをチェック
-        if self.message_timeout > 0 and current_time > self.message_timeout:
-            if self.dog.is_alive:
-                self.message = f"{self.dog.name}は{self.dog.get_mood()}な様子..."
-            else:
-                self.message = f"{self.dog.name}はもういない..."
-            self.message_timeout = 0
-        
-        # ゲームデータを保存
-        self.save_current_game()
+        # 現在選択中の犬がいる場合
+        if self.dog:
+            # メッセージのタイムアウトをチェック
+            if self.message_timeout > 0 and current_time > self.message_timeout:
+                if self.dog.is_alive:
+                    self.message = f"{self.dog.name}は{self.dog.get_mood()}な様子..."
+                else:
+                    self.message = f"{self.dog.name}はもういない..."
+                self.message_timeout = 0
     
     def perform_action(self, action):
         """アクションを実行する"""
-        if not self.game_started or self.dog is None:
+        if not self.game_started or self.dog is None or not self.dog.is_alive:
             return
         
         # トレーナーボーナスを取得
@@ -90,7 +107,11 @@ class GameState:
             elif demo_action == "kill":
                 self.message = self.dog.demo_kill()
                 # 死亡処理
-                self.handle_dog_death()
+                self.handle_dog_death(self.dog)
+            
+            # 犬のデータを保存
+            if self.dog.is_alive:
+                self.save_manager.save_dog(self.dog.to_dict())
             return
         
         # 通常のアクション処理
@@ -107,39 +128,30 @@ class GameState:
         
         self.message_timeout = time.time() + 3  # メッセージを3秒間表示
         
-        # ゲームデータを保存
-        self.save_current_game()
+        # 犬のデータを保存
+        self.save_manager.save_dog(self.dog.to_dict())
     
-    def handle_dog_death(self):
+    def handle_dog_death(self, dog):
         """犬の死亡を処理する"""
-        if hasattr(self, "death_handled") and self.death_handled:
-            return
-        
         # 墓地に追加
-        self.save_manager.add_to_graveyard(self.dog)
+        self.save_manager.add_to_graveyard(dog)
         
-        # 現在のゲームデータを削除
-        self.save_manager.delete_current_game()
+        # 犬リストから削除
+        self.dogs = [d for d in self.dogs if d.id != dog.id]
         
-        # メッセージを設定
-        self.message = f"{self.dog.name}は永遠の眠りについた..."
-        self.message_timeout = time.time() + 5
-        
-        # 死亡処理済みフラグを設定
-        self.death_handled = True
+        # 現在選択中の犬が死亡した場合
+        if self.dog and self.dog.id == dog.id:
+            # メッセージを設定
+            self.message = f"{dog.name}は永遠の眠りについた..."
+            self.message_timeout = time.time() + 5
     
-    def save_current_game(self):
-        """現在のゲームデータを保存"""
-        if self.dog and self.dog.is_alive:
-            self.save_manager.save_current_game(self.dog.to_dict())
-    
-    def restart_game(self):
-        """ゲームを再スタート"""
-        self.dog = None
-        self.game_started = False
-        self.message = "犬を選んでください"
+    def add_new_dog(self):
+        """新しい犬を追加するモードに移行"""
         self.state = "select_dog"
-        self.death_handled = False
+    
+    def show_dog_management(self):
+        """犬管理画面を表示"""
+        self.state = "dog_management"
     
     def show_graveyard(self):
         """墓地を表示"""
@@ -154,4 +166,7 @@ class GameState:
         if self.dog and self.dog.is_alive:
             self.state = "main_game"
         else:
-            self.state = "select_dog"
+            if len(self.dogs) > 0:
+                self.state = "dog_management"
+            else:
+                self.state = "select_dog"

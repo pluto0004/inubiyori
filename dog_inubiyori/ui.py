@@ -15,17 +15,16 @@ class UI:
         # フォントの作成
         self.create_fonts()
         
-        # 色の定義 - より洗練された配色に更新
-        self.BLACK = (0, 0, 0)
-        self.WHITE = (255, 255, 255)
-        self.GRAY = (200, 200, 200)
-        self.LIGHT_GRAY = (240, 240, 240)
-        self.LIGHT_BLUE = (173, 216, 230)
-        self.GREEN = (144, 238, 144)
-        self.RED = (255, 99, 71)
-        self.YELLOW = (255, 255, 153)
-        self.BROWN = (139, 69, 19)
-        self.HOVER_COLOR = (255, 220, 180)  # ホバー時の色
+        # 色の定義（洗練されたパステル調に変更）
+        self.BLACK = (40, 40, 40)
+        self.WHITE = (250, 250, 250)
+        self.GRAY = (220, 220, 220)
+        self.LIGHT_BLUE = (173, 216, 250)  # 明るいパステルブルー
+        self.GREEN = (170, 220, 170)       # 柔らかいグリーン
+        self.RED = (255, 120, 120)         # 柔らかいレッド
+        self.YELLOW = (255, 245, 180)      # パステルイエロー
+        self.BROWN = (180, 140, 100)       # 柔らかいブラウン
+        self.HOVER_COLOR = (255, 235, 200) # ホバー時の淡いオレンジ
         self.BUTTON_COLOR = (230, 230, 250)  # 通常ボタンの色
         self.ACTION_BUTTON_COLOR = (200, 230, 255)  # アクションボタンの色
         self.BACKGROUND_COLOR = (250, 250, 255)  # 背景色
@@ -52,6 +51,9 @@ class UI:
         
         # ホバー状態の追跡
         self.hover_button = None
+        
+        # 音量設定
+        self.volume = 0.5  # デフォルト音量
         
         # ロゴ画像の読み込み
         try:
@@ -174,6 +176,9 @@ class UI:
         
         self.screen.blit(title, (self.width // 2 - title.get_width() // 2, 40))
         
+        # 音量調整ボタンを右上に配置
+        self.draw_volume_controls()
+        
         # 犬の選択肢
         dog_names = {
             "コーギー": "コーギー",
@@ -250,7 +255,7 @@ class UI:
             self.screen.blit(name, (x + button_width // 2 - name.get_width() // 2, y + button_height - 50))
         
         # メニューボタン（右上に配置）
-        self.draw_menu_buttons(["墓地を見る", "トレーナー情報"])
+        self.draw_menu_buttons(["墓地を見る", "トレーナー"])
     
     def check_dog_selection(self, mouse_pos, dog_types):
         """犬の選択をチェック"""
@@ -275,39 +280,102 @@ class UI:
         # マウス位置を取得してホバー効果を適用
         mouse_pos = pygame.mouse.get_pos()
         
+        icon_size = 40
+        margin = 15
+        # 右端からではなく、少し左に寄せる（例: +30px）
+        offset = 30
+        start_x = self.width - (icon_size + margin) * len(menu_items) - offset
+        y = self.height - icon_size - 10  # 画面右下に配置
+        
         for i, item in enumerate(menu_items):
-            button_width = 160
-            button_height = 40
-            margin = 15
-            
-            # 右上に配置、タイトルと重ならないように調整
-            x = self.width - button_width - 20
-            y = 20 + i * (button_height + margin)
+            x = start_x + i * (icon_size + margin)
             
             # ホバー効果の判定
-            is_hover = x <= mouse_pos[0] <= x + button_width and y <= mouse_pos[1] <= y + button_height
+            is_hover = x <= mouse_pos[0] <= x + icon_size and y <= mouse_pos[1] <= y + icon_size
             
-            # ボタンの背景
+            # アイコンの背景（円形）
             button_color = self.HOVER_COLOR if is_hover else self.YELLOW
-            pygame.draw.rect(self.screen, button_color, (x, y, button_width, button_height), border_radius=self.BUTTON_RADIUS)
+            pygame.draw.circle(self.screen, button_color, (x + icon_size // 2, y + icon_size // 2), icon_size // 2)
             
-            # ボタンの枠線 - ホバー時は太く
+            # アイコンの枠線 - ホバー時は太く
             border_width = 2 if is_hover else 1
-            pygame.draw.rect(self.screen, self.BLACK, (x, y, button_width, button_height), border_width, border_radius=self.BUTTON_RADIUS)
+            pygame.draw.circle(self.screen, self.BLACK, (x + icon_size // 2, y + icon_size // 2), icon_size // 2, border_width)
             
-            # ボタンのテキスト
-            try:
-                item_text = self.small_font.render(item, True, self.BLACK)
-            except:
-                # フォールバック: 英語で表示
-                menu_names = {"墓地を見る": "Graveyard", "トレーナー情報": "Trainer Info"}
-                item_text = self.default_small_font.render(menu_names.get(item, item), True, self.BLACK)
-            
-            self.screen.blit(item_text, (x + button_width // 2 - item_text.get_width() // 2, 
-                                        y + button_height // 2 - item_text.get_height() // 2))
+            # アイコンの描画
+            if item == "墓地を見る":
+                # 墓石アイコン
+                pygame.draw.rect(self.screen, (150, 150, 150), (x + icon_size // 2 - 8, y + 10, 16, 20), border_radius=2)
+                pygame.draw.rect(self.screen, (130, 130, 130), (x + icon_size // 2 - 10, y + 5, 20, 8), border_radius=1)
+                pygame.draw.line(self.screen, self.BLACK, (x + icon_size // 2, y + 15), (x + icon_size // 2, y + 25), 2)
+                pygame.draw.line(self.screen, self.BLACK, (x + icon_size // 2 - 5, y + 20), (x + icon_size // 2 + 5, y + 20), 2)
+            elif item == "トレーナー":
+                # 人物アイコン
+                pygame.draw.circle(self.screen, (100, 100, 200), (x + icon_size // 2, y + 15), 8)  # 頭
+                pygame.draw.rect(self.screen, (100, 100, 200), (x + icon_size // 2 - 8, y + 23, 16, 12))  # 体
+                
+            # ツールチップ（ホバー時）
+            if is_hover:
+                try:
+                    tooltip = self.tiny_font.render(item, True, self.BLACK)
+                except:
+                    # フォールバック: 英語で表示
+                    menu_names = {"墓地を見る": "Graveyard", "トレーナー": "Trainer Info"}
+                    tooltip = self.default_tiny_font.render(menu_names.get(item, item), True, self.BLACK)
+                
+                # ツールチップの背景
+                tooltip_padding = 5
+                tooltip_bg = pygame.Rect(
+                    x + icon_size // 2 - tooltip.get_width() // 2 - tooltip_padding,
+                    y - tooltip.get_height() - 10,
+                    tooltip.get_width() + tooltip_padding * 2,
+                    tooltip.get_height() + tooltip_padding * 2
+                )
+                pygame.draw.rect(self.screen, (255, 255, 220), tooltip_bg, border_radius=5)
+                pygame.draw.rect(self.screen, self.BLACK, tooltip_bg, 1, border_radius=5)
+                
+                # ツールチップのテキスト
+                self.screen.blit(tooltip, (x + icon_size // 2 - tooltip.get_width() // 2, y - tooltip.get_height() - 5))
             
             # ボタンの位置を保存
-            self.menu_buttons.append((x, y, button_width, button_height, item))
+            self.menu_buttons.append((x, y, icon_size, icon_size, item))
+            
+            # アイコンの描画
+            if item == "墓地を見る":
+                # 墓石アイコン
+                pygame.draw.rect(self.screen, (150, 150, 150), (x + icon_size // 2 - 10, y + 12, 20, 25), border_radius=2)
+                pygame.draw.rect(self.screen, (130, 130, 130), (x + icon_size // 2 - 12, y + 7, 24, 10), border_radius=1)
+                pygame.draw.line(self.screen, self.BLACK, (x + icon_size // 2, y + 18), (x + icon_size // 2, y + 32), 2)
+                pygame.draw.line(self.screen, self.BLACK, (x + icon_size // 2 - 6, y + 25), (x + icon_size // 2 + 6, y + 25), 2)
+            elif item == "トレーナー":
+                # 人物アイコン
+                pygame.draw.circle(self.screen, (100, 100, 200), (x + icon_size // 2, y + 18), 10)  # 頭
+                pygame.draw.rect(self.screen, (100, 100, 200), (x + icon_size // 2 - 10, y + 28, 20, 15))  # 体
+                
+            # ツールチップ（ホバー時）
+            if is_hover:
+                try:
+                    tooltip = self.tiny_font.render(item, True, self.BLACK)
+                except:
+                    # フォールバック: 英語で表示
+                    menu_names = {"墓地を見る": "Graveyard", "トレーナー": "Trainer Info"}
+                    tooltip = self.default_tiny_font.render(menu_names.get(item, item), True, self.BLACK)
+                
+                # ツールチップの背景
+                tooltip_padding = 5
+                tooltip_bg = pygame.Rect(
+                    x + icon_size // 2 - tooltip.get_width() // 2 - tooltip_padding,
+                    y - tooltip.get_height() - 10,
+                    tooltip.get_width() + tooltip_padding * 2,
+                    tooltip.get_height() + tooltip_padding * 2
+                )
+                pygame.draw.rect(self.screen, (255, 255, 220), tooltip_bg, border_radius=5)
+                pygame.draw.rect(self.screen, self.BLACK, tooltip_bg, 1, border_radius=5)
+                
+                # ツールチップのテキスト
+                self.screen.blit(tooltip, (x + icon_size // 2 - tooltip.get_width() // 2, y - tooltip.get_height() - 5))
+            
+            # ボタンの位置を保存
+            self.menu_buttons.append((x, y, icon_size, icon_size, item))
     
     def check_menu_selection(self, mouse_pos):
         """メニューの選択をチェック"""
@@ -337,7 +405,7 @@ class UI:
         y = self.height // 2 + 50  # ロゴの下に配置
         
         # バーの背景
-        pygame.draw.rect(self.screen, self.LIGHT_GRAY, (x, y, bar_width, bar_height), border_radius=8)
+        pygame.draw.rect(self.screen, self.YELLOW, (x, y, bar_width, bar_height), border_radius=8)
         
         # バーの進捗
         progress_width = int(bar_width * progress)
@@ -427,6 +495,9 @@ class UI:
             days_text = self.default_small_font.render(f"Days: {int(dog.lifespan_days)}", True, self.BLACK)
         
         self.screen.blit(days_text, (self.width // 2 - days_text.get_width() // 2, 100))
+        
+        # 音量調整ボタンを右上に配置
+        self.draw_volume_controls()
         
         # 犬のアニメーション表示エリア
         animation_area_height = 200
@@ -519,7 +590,6 @@ class UI:
                     eng_message = eng_message.replace(jp, eng)
             
             message = self.default_normal_font.render(eng_message, True, self.BLACK)
-        
         # メッセージが長すぎる場合は小さいフォントで表示
         if message.get_width() > message_bg_rect.width - 20:
             try:
@@ -539,8 +609,8 @@ class UI:
             self.draw_restart_button()
         
         # メニューボタン
-        self.draw_menu_buttons(["墓地を見る", "トレーナー情報"])
-    
+        self.draw_menu_buttons(["墓地を見る", "トレーナー"])
+        
     def draw_status_bars(self, dog, start_y=80):
         """ステータスバーを描画"""
         status_items = [
@@ -597,7 +667,7 @@ class UI:
             bar_x = x + 70
             bar_y = y + 2  # 垂直位置を微調整
             
-            pygame.draw.rect(self.screen, self.LIGHT_GRAY, (bar_x, bar_y, bar_width, self.STATUS_BAR_HEIGHT), border_radius=5)
+            pygame.draw.rect(self.screen, self.YELLOW, (bar_x, bar_y, bar_width, self.STATUS_BAR_HEIGHT), border_radius=5)
             
             # ステータスバーの値
             value_width = min(value * bar_width / 100, bar_width)  # 値に応じた幅
@@ -923,6 +993,9 @@ class UI:
         
         self.screen.blit(title, (self.width // 2 - title.get_width() // 2, 20))
         
+        # 音量調整ボタンを右上に配置
+        self.draw_volume_controls()
+        
         if not graveyard:
             # 墓地が空の場合
             try:
@@ -1018,7 +1091,7 @@ class UI:
         self.draw_back_button()
     
     def draw_trainer_info(self, trainer_data):
-        """トレーナー情報画面を描画"""
+        """トレーナー画面を描画"""
         # 背景を塗りつぶす
         self.screen.fill(self.BACKGROUND_COLOR)
         
@@ -1028,14 +1101,17 @@ class UI:
         
         # タイトル
         try:
-            title = self.title_font.render("トレーナー情報", True, self.BLACK)
+            title = self.title_font.render("トレーナー", True, self.BLACK)
         except:
             # フォールバック: 英語で表示
             title = self.default_title_font.render("Trainer Info", True, self.BLACK)
         
         self.screen.blit(title, (self.width // 2 - title.get_width() // 2, 20))
         
-        # トレーナー情報の背景
+        # 音量調整ボタンを右上に配置
+        self.draw_volume_controls()
+        
+        # トレーナーの背景
         info_bg_width = self.width - 40
         info_bg_height = self.height - 150
         info_bg_x = 20
@@ -1069,7 +1145,7 @@ class UI:
         exp_ratio = min(1.0, current_exp / max_exp if max_exp > 0 else 0)
         
         # 経験値バーの背景
-        pygame.draw.rect(self.screen, self.LIGHT_GRAY, 
+        pygame.draw.rect(self.screen, self.GRAY, 
                         (exp_bar_x, exp_bar_y, exp_bar_width, exp_bar_height), 
                         border_radius=5)
         
@@ -1242,73 +1318,314 @@ class UI:
         
         # 戻るボタン
         self.draw_back_button()
+    def handle_key_event(self, event, dog):
+        """キーボードイベント処理: dキーで犬を死亡させる"""
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_d:
+                dog.is_alive = False
+    
     def draw_demo_buttons(self, dog):
-        """デモ用ショートカットボタンを描画"""
-        # ボタンの設定
-        buttons = [
-            ("成長させる", "grow"),
-            ("病気にする", "make_sick"),
-            ("死亡させる", "kill")
-        ]
-        
-        button_width = 120
-        button_height = 30
-        margin = 10
-        start_x = self.width - (button_width + margin) * len(buttons) - 10
-        y = self.height - 40
+        pass
+    
+    def draw_volume_controls(self):
+        """音量調整ボタンを描画"""
+        # 音量調整ボタンを右上に配置
+        button_width = 160
+        button_height = 40
+        x = self.width - button_width - 20
+        y = 20
         
         # マウス位置を取得してホバー効果を適用
         mouse_pos = pygame.mouse.get_pos()
         
-        # デモボタンのグループ背景
-        demo_bg_width = (button_width + margin) * len(buttons) + 10
-        demo_bg_height = button_height + 10
-        demo_bg_x = start_x - 5
-        demo_bg_y = y - 5
+        # ボタンの背景
+        pygame.draw.rect(self.screen, self.LIGHT_BLUE, (x, y, button_width, button_height), border_radius=self.BUTTON_RADIUS)
+        pygame.draw.rect(self.screen, self.BLACK, (x, y, button_width, button_height), 1, border_radius=self.BUTTON_RADIUS)
         
-        pygame.draw.rect(self.screen, (255, 240, 240), 
-                        (demo_bg_x, demo_bg_y, demo_bg_width, demo_bg_height), 
-                        border_radius=5)
-        pygame.draw.rect(self.screen, (255, 200, 200), 
-                        (demo_bg_x, demo_bg_y, demo_bg_width, demo_bg_height), 
-                        1, border_radius=5)
+        # 音量ラベル
+        try:
+            volume_text = self.small_font.render("音量:", True, self.BLACK)
+        except:
+            # フォールバック: 英語で表示
+            volume_text = self.default_small_font.render("Volume:", True, self.BLACK)
         
-        # デモラベル
-        demo_label = self.tiny_font.render("デモ機能:", True, (150, 50, 50))
-        self.screen.blit(demo_label, (demo_bg_x + 5, demo_bg_y - 15))
+        self.screen.blit(volume_text, (x + 10, y + button_height // 2 - volume_text.get_height() // 2))
         
-        for i, (label, action) in enumerate(buttons):
-            x = start_x + i * (button_width + margin)
-            
-            # ホバー効果の判定
-            is_hover = x <= mouse_pos[0] <= x + button_width and y <= mouse_pos[1] <= y + button_height
-            
-            # ボタンの背景
-            button_color = self.HOVER_COLOR if is_hover else (255, 180, 180)  # 赤っぽい色
-            pygame.draw.rect(self.screen, button_color, (x, y, button_width, button_height), border_radius=5)
-            
-            # ボタンの枠線 - ホバー時は太く
-            border_width = 2 if is_hover else 1
-            pygame.draw.rect(self.screen, (150, 50, 50), (x, y, button_width, button_height), border_width, border_radius=5)
-            
-            # ボタンのテキスト
+        # 音量バー
+        bar_width = 70
+        bar_height = 10
+        bar_x = x + 60
+        bar_y = y + button_height // 2 - bar_height // 2
+        
+       
+        
+        # バーの背景
+        pygame.draw.rect(self.screen, self.GRAY, (bar_x, bar_y, bar_width, bar_height), border_radius=5)
+        
+        # 現在の音量を表示
+        volume_width = int(bar_width * self.volume)
+        pygame.draw.rect(self.screen, self.GREEN, (bar_x, bar_y, volume_width, bar_height), border_radius=5)
+        
+        # バーの枠
+        pygame.draw.rect(self.screen, self.BLACK, (bar_x, bar_y, bar_width, bar_height), 1, border_radius=5)
+        
+        # 音量調整ボタン（- と +）
+        minus_x = bar_x - 20
+        minus_y = bar_y - 5
+        plus_x = bar_x + bar_width + 5
+        plus_y = bar_y - 5
+        button_size = 20
+        
+        # マイナスボタン
+        is_minus_hover = minus_x <= mouse_pos[0] <= minus_x + button_size and minus_y <= mouse_pos[1] <= minus_y + button_size
+        minus_color = self.HOVER_COLOR if is_minus_hover else self.YELLOW
+        pygame.draw.rect(self.screen, minus_color, (minus_x, minus_y, button_size, button_size), border_radius=5)
+        pygame.draw.rect(self.screen, self.BLACK, (minus_x, minus_y, button_size, button_size), 1, border_radius=5)
+        pygame.draw.line(self.screen, self.BLACK, (minus_x + 5, minus_y + button_size // 2), (minus_x + button_size - 5, minus_y + button_size // 2), 2)
+        
+        # プラスボタン
+        is_plus_hover = plus_x <= mouse_pos[0] <= plus_x + button_size and plus_y <= mouse_pos[1] <= plus_y + button_size
+        plus_color = self.HOVER_COLOR if is_plus_hover else self.YELLOW
+        pygame.draw.rect(self.screen, plus_color, (plus_x, plus_y, button_size, button_size), border_radius=5)
+        pygame.draw.rect(self.screen, self.BLACK, (plus_x, plus_y, button_size, button_size), 1, border_radius=5)
+        pygame.draw.line(self.screen, self.BLACK, (plus_x + 5, plus_y + button_size // 2), (plus_x + button_size - 5, plus_y + button_size // 2), 2)
+        pygame.draw.line(self.screen, self.BLACK, (plus_x + button_size // 2, plus_y + 5), (plus_x + button_size // 2, plus_y + button_size - 5), 2)
+        
+        # ボタンの位置を保存
+        self.action_buttons.append((minus_x, minus_y, button_size, button_size, "volume_down"))
+        self.action_buttons.append((plus_x, plus_y, button_size, button_size, "volume_up"))
+    
+    def update_volume(self, change):
+        """音量を更新"""
+        self.volume = max(0.0, min(1.0, self.volume + change))
+        return self.volume
+    def draw_dog_management(self, dogs):
+        """犬管理画面を描画"""
+        # 背景を塗りつぶす
+        self.screen.fill(self.BACKGROUND_COLOR)
+        
+        # タイトル背景
+        pygame.draw.rect(self.screen, (240, 240, 255), (0, 0, self.width, 80))
+        pygame.draw.line(self.screen, (220, 220, 240), (0, 80), (self.width, 80), 2)
+        
+        # タイトル
+        try:
+            title = self.title_font.render("飼っている犬", True, self.BLACK)
+        except:
+            # フォールバック: 英語で表示
+            title = self.default_title_font.render("Your Dogs", True, self.BLACK)
+        
+        self.screen.blit(title, (self.width // 2 - title.get_width() // 2, 20))
+        
+        # 音量調整ボタンを右上に配置
+        self.draw_volume_controls()
+        
+        if not dogs:
+            # 犬がいない場合
             try:
-                button_text = self.small_font.render(label, True, (100, 0, 0))
+                message = self.normal_font.render("まだ犬を飼っていません", True, self.BLACK)
             except:
                 # フォールバック: 英語で表示
-                english_labels = {"成長させる": "Grow", "病気にする": "Make Sick", "死亡させる": "Kill"}
-                button_text = self.default_small_font.render(english_labels.get(label, label), True, (100, 0, 0))
+                message = self.default_normal_font.render("You don't have any dogs yet", True, self.BLACK)
             
-            # テキストが長すぎる場合は小さいフォントで表示
-            if button_text.get_width() > button_width - 10:
+            # メッセージの背景
+            message_width = message.get_width() + 40
+            message_height = message.get_height() + 20
+            message_x = self.width // 2 - message_width // 2
+            message_y = self.height // 2 - message_height // 2
+            
+            pygame.draw.rect(self.screen, (255, 255, 255), 
+                            (message_x, message_y, message_width, message_height), 
+                            border_radius=10)
+            pygame.draw.rect(self.screen, (200, 200, 210), 
+                            (message_x, message_y, message_width, message_height), 
+                            2, border_radius=10)
+            
+            self.screen.blit(message, (self.width // 2 - message.get_width() // 2, self.height // 2 - message.get_height() // 2))
+        else:
+            # 犬のリストを表示
+            self.draw_dog_list(dogs)
+        
+        # 新しい犬を追加するボタン
+        self.draw_add_dog_button()
+        
+        # メニューボタン
+        self.draw_menu_buttons(["墓地を見る", "トレーナー"])
+    
+    def draw_dog_list(self, dogs):
+        """犬のリストを描画"""
+        self.dog_buttons = []  # 犬ボタンのリストをクリア
+        
+        # マウス位置を取得してホバー効果を適用
+        mouse_pos = pygame.mouse.get_pos()
+        
+        # 犬カードのサイズと配置
+        card_width = 220
+        card_height = 180
+        margin_x = 30
+        margin_y = 20
+        cards_per_row = 3
+        
+        # スクロール可能な領域を作成
+        list_area_y = 100
+        list_area_height = self.height - list_area_y - 80  # 下部のボタン用にスペースを確保
+        
+        for i, dog in enumerate(dogs):
+            row = i // cards_per_row
+            col = i % cards_per_row
+            
+            x = margin_x + col * (card_width + margin_x)
+            y = list_area_y + row * (card_height + margin_y)
+            
+            # ホバー効果の判定
+            is_hover = x <= mouse_pos[0] <= x + card_width and y <= mouse_pos[1] <= y + card_height
+            
+            # カードの背景
+            card_color = self.HOVER_COLOR if is_hover else self.BUTTON_COLOR
+            pygame.draw.rect(self.screen, card_color, (x, y, card_width, card_height), border_radius=10)
+            
+            # カードの枠線 - ホバー時は太く
+            border_width = 3 if is_hover else 2
+            border_color = (100, 200, 100) if dog.is_alive else (200, 100, 100)
+            pygame.draw.rect(self.screen, border_color, (x, y, card_width, card_height), border_width, border_radius=10)
+            
+            # 犬の画像
+            try:
+                if dog.dog_type == "コーギー":
+                    dog_img = pygame.image.load(os.path.join("dog_inubiyori", "assets", "dogs", "corgi.png"))
+                elif dog.dog_type == "ミニチュアダックスフンド":
+                    dog_img = pygame.image.load(os.path.join("dog_inubiyori", "assets", "dogs", "dachsuhund.png"))
+                elif dog.dog_type == "柴犬":
+                    dog_img = pygame.image.load(os.path.join("dog_inubiyori", "assets", "dogs", "shiba.png"))
+                else:
+                    # 未知の犬種の場合はプレースホルダーを使用
+                    dog_img = self.placeholder_images[dog.dog_type]["small"]
+                
+                # 画像サイズを調整
+                dog_img = pygame.transform.scale(dog_img, (80, 80))
+                self.screen.blit(dog_img, (x + 20, y + 20))
+            except Exception as e:
+                # エラーが発生した場合はプレースホルダーを使用
+                self.screen.blit(self.placeholder_images[dog.dog_type]["small"], (x + 20, y + 20))
+            
+            # 犬の名前
+            try:
+                name = self.normal_font.render(dog.name, True, self.BLACK)
+            except:
+                # フォールバック: 英語で表示
+                name = self.default_normal_font.render(dog.name, True, self.BLACK)
+            
+            # 名前が長すぎる場合は小さいフォントで表示
+            if name.get_width() > card_width - 120:
                 try:
-                    button_text = self.tiny_font.render(label, True, (100, 0, 0))
+                    name = self.small_font.render(dog.name, True, self.BLACK)
                 except:
-                    button_text = self.default_tiny_font.render(english_labels.get(label, label), True, (100, 0, 0))
+                    name = self.default_small_font.render(dog.name, True, self.BLACK)
             
-            # テキストを中央に配置
-            self.screen.blit(button_text, (x + button_width // 2 - button_text.get_width() // 2, 
-                                        y + button_height // 2 - button_text.get_height() // 2))
+            self.screen.blit(name, (x + 120, y + 30))
+            
+            # 犬種
+            display_type = "ダックス" if dog.dog_type == "ミニチュアダックスフンド" else dog.dog_type
+            try:
+                dog_type = self.small_font.render(display_type, True, self.BLACK)
+            except:
+                # フォールバック: 英語で表示
+                dog_names = {"コーギー": "Corgi", "ミニチュアダックスフンド": "Dachshund", "柴犬": "Shiba"}
+                dog_type = self.default_small_font.render(dog_names.get(dog.dog_type, dog.dog_type), True, self.BLACK)
+            
+            self.screen.blit(dog_type, (x + 120, y + 60))
+            
+            # 成長段階
+            try:
+                growth = self.small_font.render(f"成長: {dog.growth_stage}", True, self.BLACK)
+            except:
+                # フォールバック: 英語で表示
+                growth_names = {"子犬": "Puppy", "成犬": "Adult", "老犬": "Senior"}
+                growth = self.default_small_font.render(f"Growth: {growth_names.get(dog.growth_stage, dog.growth_stage)}", True, self.BLACK)
+            
+            self.screen.blit(growth, (x + 120, y + 90))
+            
+            # 生存日数
+            try:
+                days = self.small_font.render(f"{int(dog.lifespan_days)}日", True, self.BLACK)
+            except:
+                # フォールバック: 英語で表示
+                days = self.default_small_font.render(f"{int(dog.lifespan_days)} days", True, self.BLACK)
+            
+            self.screen.blit(days, (x + 120, y + 120))
+            
+            # 状態表示
+            status_color = (100, 200, 100) if dog.is_alive else (200, 100, 100)
+            status_text = dog.get_mood() if dog.is_alive else "死亡"
+            try:
+                status = self.small_font.render(status_text, True, status_color)
+            except:
+                # フォールバック: 英語で表示
+                status_names = {
+                    "とても幸せ": "Very Happy", 
+                    "幸せ": "Happy", 
+                    "普通": "Normal", 
+                    "不満": "Unsatisfied", 
+                    "不機嫌": "Grumpy", 
+                    "病気": "Sick",
+                    "死亡": "Dead"
+                }
+                status = self.default_small_font.render(status_names.get(status_text, status_text), True, status_color)
+            
+            # 状態の背景
+            status_bg_width = status.get_width() + 10
+            status_bg_height = status.get_height() + 6
+            status_bg_x = x + card_width - status_bg_width - 10
+            status_bg_y = y + 10
+            
+            pygame.draw.rect(self.screen, (255, 255, 255, 180), 
+                            (status_bg_x, status_bg_y, status_bg_width, status_bg_height), 
+                            border_radius=5)
+            pygame.draw.rect(self.screen, status_color, 
+                            (status_bg_x, status_bg_y, status_bg_width, status_bg_height), 
+                            1, border_radius=5)
+            
+            self.screen.blit(status, (status_bg_x + 5, status_bg_y + 3))
             
             # ボタンの位置を保存
-            self.action_buttons.append((x, y, button_width, button_height, f"demo_{action}"))
+            self.dog_buttons.append((x, y, card_width, card_height, dog.id))
+    
+    def draw_add_dog_button(self):
+        """新しい犬を追加するボタンを描画"""
+        button_width = 300
+        button_height = 50
+        x = self.width // 2 - button_width // 2
+        y = self.height - button_height - 20
+        
+        # マウス位置を取得してホバー効果を適用
+        mouse_pos = pygame.mouse.get_pos()
+        is_hover = x <= mouse_pos[0] <= x + button_width and y <= mouse_pos[1] <= y + button_height
+        
+        # ボタンの背景
+        button_color = self.HOVER_COLOR if is_hover else self.GREEN
+        pygame.draw.rect(self.screen, button_color, (x, y, button_width, button_height), border_radius=10)
+        
+        # ボタンの枠線 - ホバー時は太く
+        border_width = 3 if is_hover else 2
+        pygame.draw.rect(self.screen, self.BLACK, (x, y, button_width, button_height), border_width, border_radius=10)
+        
+        # ボタンのテキスト
+        try:
+            button_text = self.normal_font.render("新しい犬を追加", True, self.BLACK)
+        except:
+            # フォールバック: 英語で表示
+            button_text = self.default_normal_font.render("Add New Dog", True, self.BLACK)
+        
+        self.screen.blit(button_text, (x + button_width // 2 - button_text.get_width() // 2, 
+                                      y + button_height // 2 - button_text.get_height() // 2))
+        
+        # ボタンの位置を保存
+        self.action_buttons.append((x, y, button_width, button_height, "add_dog"))
+    
+    def check_dog_selection_from_list(self, mouse_pos):
+        """犬リストからの選択をチェック"""
+        for x, y, width, height, dog_id in self.dog_buttons:
+            if x <= mouse_pos[0] <= x + width and y <= mouse_pos[1] <= y + height:
+                return dog_id
+        
+        return None
